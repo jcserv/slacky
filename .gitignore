@@ -3,5 +3,5 @@ dist/
 **/.env
 
 # build artifacts
-slacky
+main
 **/.DS_Store

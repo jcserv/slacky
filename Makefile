@@ -1,11 +1,11 @@
 build:
-	go build -o slacky ./cmd/slacky
+	go build -o main ./cmd/slacky
 
 run:
-	./slacky
+	./main
 
 clean:
-	rm slacky
+	rm main
 
 clean-config:
 	rm /Users/jarrodservilla/.config/slacky/config.yaml
