@@ -1,13 +1,17 @@
 .PHONY: build run clean clean-config clean-all dev lint test test-verbose test-short test-coverage test-update
 
+# Version info for local builds
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS := -s -w -X github.com/jcserv/slacky/internal/version.Version=$(VERSION)
+
 build:
-	go build -o main main.go
+	go build -trimpath -ldflags="$(LDFLAGS)" -o slacky main.go
 
 run:
-	./main
+	./slacky
 
 clean:
-	rm main
+	rm -f slacky
 
 clean-config:
 	rm /Users/jarrodservilla/.config/slacky/config.yaml

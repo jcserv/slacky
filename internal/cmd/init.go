@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	_init "github.com/jcserv/slacky/internal/app/init"
+	"github.com/jcserv/slacky/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +34,7 @@ This will guide you through setting up your Slack bot token and app token.`,
 // runInitWizard runs the initialization wizard
 func runInitWizard() (*InitResult, error) {
 	// Call the internal/init package
-	result, err := _init.InitWithVersion(version)
+	result, err := _init.InitWithVersion(version.Version)
 	if err != nil {
 		return nil, err
 	}

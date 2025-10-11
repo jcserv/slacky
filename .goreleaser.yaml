@@ -12,6 +12,8 @@ builds:
   - env: ["CGO_ENABLED=0"]
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags: ["-trimpath"]
+    ldflags:
+      - -s -w -X github.com/jcserv/slacky/internal/version.Version={{.Version}}
     targets: ["go_first_class"]
 
 changelog:

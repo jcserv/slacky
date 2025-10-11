@@ -1,1 +1,2 @@
-- get version from build info
+- fix bug where init is not redirecting to main once completed
+- remove logo from main screen

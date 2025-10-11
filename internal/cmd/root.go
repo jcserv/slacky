@@ -8,6 +8,7 @@ import (
 	"github.com/jcserv/slacky/internal/app"
 	_init "github.com/jcserv/slacky/internal/app/init"
 	"github.com/jcserv/slacky/internal/config"
+	"github.com/jcserv/slacky/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -74,7 +75,7 @@ func setupApp(cmd *cobra.Command) (*app.App, error) {
 			fmt.Println()
 
 			// Run init wizard
-			result, err := _init.InitWithVersion("v0.1.0-dev")
+			result, err := _init.InitWithVersion(version.Version)
 			if err != nil {
 				return nil, fmt.Errorf("init failed: %w", err)
 			}
