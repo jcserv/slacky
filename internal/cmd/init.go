@@ -143,7 +143,7 @@ func (m initModel) renderLogo() string {
 	return components.Render(components.Opts{
 		Version:      m.version,
 		Width:        m.width,
-		DiagColor:    styles.ColourDim,
+		FillColor:    styles.ColourDim,
 		VersionColor: styles.Tertiary,
 	})
 }

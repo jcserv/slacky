@@ -11,7 +11,7 @@ func TestRender(t *testing.T) {
 	opts := Opts{
 		Version:      "v0.1.0-dev",
 		Width:        100,
-		DiagColor:    lipgloss.Color("#7D56F4"),
+		FillColor:    lipgloss.Color("#7D56F4"),
 		VersionColor: lipgloss.Color("#7D56F4"),
 	}
 

@@ -15,12 +15,12 @@ const asciiArt = `███████╗██╗      ██████╗  
 ███████║███████╗██║   ██║╚██████╗██║  ██╗   ██║
 ╚══════╝╚══════╝╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝`
 
-const diag = "/"
+const fillCharacter = "»"
 
 type Opts struct {
 	Version      string
 	Width        int
-	DiagColor    lipgloss.Color
+	FillColor    lipgloss.Color
 	VersionColor lipgloss.Color
 }
 
@@ -33,8 +33,8 @@ func Render(opts Opts) string {
 	logoWidth := lipgloss.Width(lines[0])
 
 	const leftWidth = 4
-	leftField := strings.Repeat(diag, leftWidth)
-	leftFieldStyle := lipgloss.NewStyle().Foreground(opts.DiagColor)
+	leftField := strings.Repeat(fillCharacter, leftWidth)
+	leftFieldStyle := lipgloss.NewStyle().Foreground(opts.FillColor)
 	versionStyle := lipgloss.NewStyle().Foreground(opts.VersionColor)
 
 	rightWidth := opts.Width - leftWidth - 1 - logoWidth - 1
@@ -55,7 +55,7 @@ func Render(opts Opts) string {
 	if rightSlashesCount < 0 {
 		rightSlashesCount = 0
 	}
-	rightSlashes := strings.Repeat(diag, rightSlashesCount)
+	rightSlashes := strings.Repeat(fillCharacter, rightSlashesCount)
 
 	versionLine := leftSlashes + " " + strings.Repeat(" ", spacesBeforeVersion) +
 		versionStyle.Render(opts.Version) + " " + leftFieldStyle.Render(rightSlashes)
@@ -71,7 +71,7 @@ func Render(opts Opts) string {
 				currentRightWidth = 0
 			}
 		}
-		rightField := strings.Repeat(diag, currentRightWidth)
+		rightField := strings.Repeat(fillCharacter, currentRightWidth)
 
 		b.WriteString(leftFieldStyle.Render(leftField))
 		b.WriteString(" ")
@@ -110,7 +110,7 @@ func SmallRender(version string, width int) string {
 	remainingWidth := width - lipgloss.Width(titleWithVersion) - 1
 	if remainingWidth > 0 {
 		diagStyle := lipgloss.NewStyle().Foreground(styles.Dim.GetForeground())
-		slashes := strings.Repeat(diag, remainingWidth)
+		slashes := strings.Repeat(fillCharacter, remainingWidth)
 		return fmt.Sprintf("%s %s", titleWithVersion, diagStyle.Render(slashes))
 	}
 	return titleWithVersion
