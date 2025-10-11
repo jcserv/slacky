@@ -16,11 +16,13 @@ import (
 	"github.com/jcserv/slacky/internal/styles"
 )
 
-type errMsg error
-type authSuccessMsg struct {
-	teamName string
-	userName string
-}
+type (
+	errMsg         error
+	authSuccessMsg struct {
+		teamName string
+		userName string
+	}
+)
 
 type model struct {
 	spinner     spinner.Model
@@ -80,11 +82,6 @@ func loadConfig() tea.Cmd {
 
 		return checkAuth(cfg)()
 	}
-}
-
-func mustGetConfigPath() string {
-	path, _ := config.ConfigPath()
-	return path
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
