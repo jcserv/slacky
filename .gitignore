@@ -4,3 +4,4 @@ dist/
 
 # build artifacts
 slacky
+**/.DS_Store

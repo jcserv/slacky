@@ -9,10 +9,12 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"golang.org/x/term"
 
 	"github.com/jcserv/slacky/internal/config"
 	"github.com/jcserv/slacky/internal/slack"
 	"github.com/jcserv/slacky/internal/styles"
+	"github.com/jcserv/slacky/internal/ui/components"
 )
 
 type step int
@@ -53,20 +55,34 @@ type initModel struct {
 	existingConfig *config.Config
 	quitting       bool
 	continueToApp  bool
-	prefCursor     int // 0 = vim mode, 1 = timestamps
-	authFailCursor int // 0 = edit bot token, 1 = edit socket token, 2 = retry
+	prefCursor     int
+	authFailCursor int
+	width          int
+	logoRendered   string
+	version        string
 }
 
-// InitResult indicates what to do after init completes
 type InitResult struct {
 	ShouldContinue bool
 }
 
-// Init runs the interactive configuration setup
 func Init() (*InitResult, error) {
+	return InitWithVersion("dev")
+}
+
+func InitWithVersion(version string) (*InitResult, error) {
 	existingCfg, _ := config.Load()
 
 	m := initialInitModel(existingCfg)
+	m.version = version
+
+	width, _, err := term.GetSize(0)
+	if err != nil {
+		width = 80
+	}
+	m.width = width
+	m.logoRendered = m.renderLogo()
+
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
 	finalModel, err := p.Run()
@@ -82,25 +98,21 @@ func Init() (*InitResult, error) {
 }
 
 func initialInitModel(existingCfg *config.Config) initModel {
-	// Bot token input
 	botInput := textinput.New()
 	botInput.Placeholder = "xoxb-..."
 	botInput.CharLimit = 200
 	botInput.Width = 60
 	botInput.Focus()
 
-	// Socket token input
 	socketInput := textinput.New()
 	socketInput.Placeholder = "xapp-..."
 	socketInput.CharLimit = 200
 	socketInput.Width = 60
 
-	// Spinner for testing
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = styles.Label
 
-	// Defaults
 	vimMode := true
 	showTimestamps := true
 	if existingCfg != nil {
@@ -123,8 +135,26 @@ func (m initModel) Init() tea.Cmd {
 	return nil
 }
 
+func (m initModel) renderLogo() string {
+	if m.width < components.MinWidth() {
+		return components.SmallRender(m.version, m.width)
+	}
+
+	return components.Render(components.Opts{
+		Version:      m.version,
+		Width:        m.width,
+		DiagColor:    styles.ColourDim,
+		VersionColor: styles.Tertiary,
+	})
+}
+
 func (m initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.logoRendered = m.renderLogo()
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -190,7 +220,6 @@ func (m initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// Update active input
 	var cmd tea.Cmd
 	switch m.step {
 	case stepBotToken:
@@ -237,17 +266,17 @@ func (m initModel) handleEnter() (tea.Model, tea.Cmd) {
 
 	case stepAuthFailed:
 		switch m.authFailCursor {
-		case 0: // Edit bot token
+		case 0:
 			m.step = stepBotToken
 			m.err = nil
 			m.botToken.Focus()
 			return m, textinput.Blink
-		case 1: // Edit socket token
+		case 1:
 			m.step = stepSocketToken
 			m.err = nil
 			m.socketToken.Focus()
 			return m, textinput.Blink
-		case 2: // Retry
+		case 2:
 			m.step = stepTesting
 			m.err = nil
 			return m, tea.Batch(m.spinner.Tick, m.testAuth())
@@ -306,12 +335,14 @@ func (m initModel) View() string {
 	var s strings.Builder
 
 	s.WriteString("\n")
+	s.WriteString(m.logoRendered)
+	s.WriteString("\n\n")
+
 	s.WriteString(styles.Title.Render("Thanks for trying out Slacky!"))
 	s.WriteString("\n")
 	s.WriteString(styles.Subtitle.Render("Let's set up your Slack workspace connection"))
 	s.WriteString("\n\n")
 
-	// Handle auth failed screen separately - show clean error UI
 	if m.step == stepAuthFailed {
 		s.WriteString(styles.Border.Render("───────────────────────────────────────────────────────────────"))
 		s.WriteString("\n\n")
@@ -322,7 +353,6 @@ func (m initModel) View() string {
 		s.WriteString(styles.Label.Render("What would you like to do?"))
 		s.WriteString("\n\n")
 
-		// Edit bot token option
 		editBotLine := "  Edit Bot Token"
 		if m.authFailCursor == 0 {
 			s.WriteString(styles.Highlight.Render("> ") + editBotLine + "\n")
@@ -330,7 +360,6 @@ func (m initModel) View() string {
 			s.WriteString(styles.Dim.Render("  ") + editBotLine + "\n")
 		}
 
-		// Edit socket token option
 		editSocketLine := "  Edit Socket Token"
 		if m.authFailCursor == 1 {
 			s.WriteString(styles.Highlight.Render("> ") + editSocketLine + "\n")
@@ -338,7 +367,6 @@ func (m initModel) View() string {
 			s.WriteString(styles.Dim.Render("  ") + editSocketLine + "\n")
 		}
 
-		// Retry option
 		retryLine := "  Retry Connection"
 		if m.authFailCursor == 2 {
 			s.WriteString(styles.Highlight.Render("> ") + retryLine + "\n")
@@ -347,14 +375,13 @@ func (m initModel) View() string {
 		}
 
 		s.WriteString("\n")
-		s.WriteString(styles.Help.Render("↑/↓ or j/k to navigate • Enter to select • Ctrl+C to quit"))
+		s.WriteString(styles.Help.Render("[↑/↓] navigate • [enter] select • [ctrl+c] quit"))
 		s.WriteString("\n")
 		return s.String()
 	}
 
-	// Show instructions (always visible until preferences)
 	if m.step >= stepWelcome && m.step < stepPreferences {
-		s.WriteString(styles.Info.Render("📋 Get your tokens from https://api.slack.com/apps"))
+		s.WriteString(styles.Highlight.Render("📋 Get your tokens from https://api.slack.com/apps"))
 		s.WriteString("\n")
 		s.WriteString(styles.Subtitle.Render("  • Bot Token: OAuth & Permissions → Bot User OAuth Token"))
 		s.WriteString("\n")
@@ -362,27 +389,22 @@ func (m initModel) View() string {
 		s.WriteString("\n\n")
 	}
 
-	// Welcome screen only
 	if m.step == stepWelcome {
-		s.WriteString(styles.Label.Render("Press Enter to continue"))
+		s.WriteString(styles.Highlight.Render("Press enter to continue"))
 		s.WriteString("\n")
 		return s.String()
 	}
 
-	// Progressive form - show completed and current fields
 	s.WriteString(styles.Border.Render("───────────────────────────────────────────────────────────────"))
 	s.WriteString("\n\n")
 
-	// Bot Token (always show after welcome)
 	if m.step >= stepBotToken {
 		if m.step > stepBotToken {
-			// Completed - show with checkmark
 			s.WriteString(styles.Completed.Render("✓ Bot Token"))
 			s.WriteString("\n")
 			s.WriteString(styles.Dim.Render("  " + maskToken(m.botToken.Value())))
 			s.WriteString("\n\n")
 		} else {
-			// Current step
 			s.WriteString(styles.Label.Render("Bot Token"))
 			s.WriteString("\n")
 			s.WriteString(styles.Subtitle.Render("Enter your Bot User OAuth Token (starts with xoxb-)"))
@@ -396,16 +418,13 @@ func (m initModel) View() string {
 		}
 	}
 
-	// Socket Token
 	if m.step >= stepSocketToken {
 		if m.step > stepSocketToken {
-			// Completed
 			s.WriteString(styles.Completed.Render("✓ Socket Token"))
 			s.WriteString("\n")
 			s.WriteString(styles.Dim.Render("  " + maskToken(m.socketToken.Value())))
 			s.WriteString("\n\n")
 		} else {
-			// Current step
 			s.WriteString(styles.Label.Render("Socket Token"))
 			s.WriteString("\n")
 			s.WriteString(styles.Subtitle.Render("Enter your App-Level Token for Socket Mode (starts with xapp-)"))
@@ -419,25 +438,20 @@ func (m initModel) View() string {
 		}
 	}
 
-	// Testing
 	if m.step >= stepTesting {
 		if m.step > stepTesting {
-			// Completed
 			s.WriteString(styles.Completed.Render(fmt.Sprintf("✓ Connected to %s as %s", m.teamName, m.userName)))
 			s.WriteString("\n\n")
 		} else {
-			// Current step
 			s.WriteString(fmt.Sprintf("%s Testing connection...", m.spinner.View()))
 			s.WriteString("\n\n")
 		}
 	}
 
-	// Preferences
 	if m.step >= stepPreferences && m.step != stepComplete && m.step != stepError {
 		s.WriteString(styles.Label.Render("UI Preferences"))
 		s.WriteString("\n\n")
 
-		// Vim mode checkbox
 		vimIcon := "☐"
 		if m.vimMode {
 			vimIcon = "☑"
@@ -449,7 +463,6 @@ func (m initModel) View() string {
 			s.WriteString(styles.Dim.Render("  ") + vimLine + "\n")
 		}
 
-		// Timestamps checkbox
 		timestampIcon := "☐"
 		if m.showTimestamps {
 			timestampIcon = "☑"
@@ -462,11 +475,10 @@ func (m initModel) View() string {
 		}
 
 		s.WriteString("\n")
-		s.WriteString(styles.Help.Render("↑/↓ or j/k to navigate • Space to toggle"))
+		s.WriteString(styles.Help.Render("[↑/↓] navigate • [space] select"))
 		s.WriteString("\n")
 	}
 
-	// Final states
 	if m.step == stepComplete {
 		configPath, _ := config.ConfigPath()
 		s.WriteString(styles.Success.Render("✓ Configuration saved!"))
@@ -488,16 +500,14 @@ func (m initModel) View() string {
 		return s.String()
 	}
 
-	// Help text
 	s.WriteString(styles.Border.Render("───────────────────────────────────────────────────────────────"))
 	s.WriteString("\n")
-	s.WriteString(styles.Help.Render("Press enter to continue • ctrl+c to quit"))
+	s.WriteString(styles.Help.Render("[enter] continue • [ctrl+c] quit"))
 	s.WriteString("\n")
 
 	return s.String()
 }
 
-// maskToken masks a token for display, showing only the prefix and last 4 chars
 func maskToken(token string) string {
 	if len(token) <= 10 {
 		return token

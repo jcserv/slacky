@@ -15,6 +15,7 @@ clean-all: clean clean-config
 dev: clean build run
 
 lint:
+	go mod tidy
 	go fmt ./...
 	golangci-lint run ./...
 

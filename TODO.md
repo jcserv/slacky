@@ -1,1 +1,3 @@
-- `slacky` when no config -> should take you to init flow  
+- refactor: split out text into a json file; i18n
+- main screen should display in an alternate screen; similar to init
+- tests

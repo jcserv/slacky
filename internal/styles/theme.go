@@ -30,7 +30,7 @@ var (
 
 	Label = lipgloss.NewStyle().
 		Bold(true).
-		Foreground(Quarternary)
+		Foreground(Tertiary)
 
 	LabelActive = lipgloss.NewStyle().
 			Bold(true).
@@ -65,6 +65,10 @@ var (
 
 	Completed = lipgloss.NewStyle().
 			Foreground(ColourSuccess)
+
+	Logo = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(Primary)
 )
 
 var (
