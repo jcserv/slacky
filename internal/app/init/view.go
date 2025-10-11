@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/jcserv/slacky/internal/config"
-	"github.com/jcserv/slacky/internal/styles"
-	"github.com/jcserv/slacky/internal/ui/components"
+	"github.com/jcserv/slacky/internal/tui/components"
+	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
 // view renders the initialization wizard UI

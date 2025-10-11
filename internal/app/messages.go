@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -21,21 +20,10 @@ type (
 )
 
 // loadConfig loads and validates the configuration
-func loadConfig() tea.Cmd {
+func loadConfig(app *App) tea.Cmd {
 	return func() tea.Msg {
-		cfg, err := config.Load()
-		if err != nil {
-			if errors.Is(err, config.ErrConfigNotFound) {
-				return errMsg(fmt.Errorf("config not found. Run 'slacky init' to set up your configuration"))
-			}
-			return errMsg(err)
-		}
-
-		if err := cfg.Validate(); err != nil {
-			return errMsg(fmt.Errorf("invalid config: %w", err))
-		}
-
-		return checkAuth(cfg)()
+		// Use the app's config directly since it's already loaded and validated
+		return checkAuth(app.Config())()
 	}
 }
 

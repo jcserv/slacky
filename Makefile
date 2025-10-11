@@ -1,5 +1,5 @@
 build:
-	go build -o main ./cmd/slacky
+	go build -o main main.go
 
 run:
 	./main

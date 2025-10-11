@@ -1,5 +1,4 @@
-- use charm/huh for form
+- tests
+- use keymap
 - can move connection test to after token is accepted
 - refactor: split out text into a toml file using go-i18n
-- main screen should display in an alternate screen; similar to init
-- tests

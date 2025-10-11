@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jcserv/slacky/internal/styles"
+	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
 const asciiArt = `███████╗██╗      ██████╗  ██████╗██╗  ██╗██╗   ██╗

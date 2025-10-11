@@ -7,7 +7,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/jcserv/slacky/internal/config"
-	"github.com/jcserv/slacky/internal/styles"
+	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
 // InitWithVersion runs the initialization wizard with a specific version
