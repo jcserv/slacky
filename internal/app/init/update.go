@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -18,15 +19,15 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c":
+		switch {
+		case key.Matches(msg, keys.Quit):
 			m.quitting = true
 			return m, tea.Quit
 
-		case "enter":
+		case key.Matches(msg, keys.Enter):
 			return handleEnter(m)
 
-		case "up", "k":
+		case key.Matches(msg, keys.Up):
 			if m.step == StepPreferences && m.prefCursor > 0 {
 				m.prefCursor--
 			}
@@ -34,7 +35,7 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.authFailCursor--
 			}
 
-		case "down", "j":
+		case key.Matches(msg, keys.Down):
 			if m.step == StepPreferences && m.prefCursor < 1 {
 				m.prefCursor++
 			}
@@ -42,7 +43,7 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.authFailCursor++
 			}
 
-		case " ", "space":
+		case key.Matches(msg, keys.Toggle):
 			if m.step == StepPreferences {
 				switch m.prefCursor {
 				case 0:

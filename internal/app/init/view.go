@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/jcserv/slacky/internal/config"
+	"github.com/jcserv/slacky/internal/tui"
 	"github.com/jcserv/slacky/internal/tui/components"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
@@ -41,7 +42,7 @@ func view(m Model) string {
 		return s.String()
 	}
 
-	s.WriteString(styles.Border.Render("───────────────────────────────────────────────────────────────"))
+	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n\n")
 
 	// Render bot token step
@@ -125,7 +126,7 @@ func view(m Model) string {
 		}
 
 		s.WriteString("\n")
-		s.WriteString(styles.Help.Render("[↑/↓] navigate • [space] select"))
+		s.WriteString(tui.RenderKeyBindings(keys.Up, keys.Down, keys.Toggle))
 		s.WriteString("\n")
 	}
 
@@ -152,9 +153,9 @@ func view(m Model) string {
 		return s.String()
 	}
 
-	s.WriteString(styles.Border.Render("───────────────────────────────────────────────────────────────"))
+	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n")
-	s.WriteString(styles.Help.Render("[enter] continue • [ctrl+c] quit"))
+	s.WriteString(tui.RenderKeyBindings(keys.Enter, keys.Quit))
 	s.WriteString("\n")
 
 	return s.String()
@@ -162,7 +163,7 @@ func view(m Model) string {
 
 // renderAuthFailedView renders the authentication failed view
 func renderAuthFailedView(m Model, s strings.Builder) string {
-	s.WriteString(styles.Border.Render("───────────────────────────────────────────────────────────────"))
+	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n\n")
 	s.WriteString(styles.Error.Render("✗ Authentication failed"))
 	s.WriteString("\n\n")
@@ -193,7 +194,7 @@ func renderAuthFailedView(m Model, s strings.Builder) string {
 	}
 
 	s.WriteString("\n")
-	s.WriteString(styles.Help.Render("[↑/↓] navigate • [enter] select • [ctrl+c] quit"))
+	s.WriteString(tui.RenderKeyBindings(keys.Up, keys.Down, keys.Enter, keys.Quit))
 	s.WriteString("\n")
 	return s.String()
 }

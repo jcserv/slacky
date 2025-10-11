@@ -2,23 +2,24 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/jcserv/slacky/internal/tui"
+	"github.com/jcserv/slacky/internal/tui/components"
 	"github.com/jcserv/slacky/internal/tui/styles"
-)
-
-var quitKeys = key.NewBinding(
-	key.WithKeys("esc", "ctrl+c"),
-	key.WithHelp("", "ctrl+c to quit"),
 )
 
 // TUIModel holds the main application state
 type TUIModel struct {
 	app         *App
 	spinner     spinner.Model
+	keys        tui.KeyMap
+	width       int
+	version     string
 	quitting    bool
 	err         error
 	authSuccess bool
@@ -34,6 +35,8 @@ func (app *App) NewTUI() TUIModel {
 	return TUIModel{
 		app:     app,
 		spinner: s,
+		keys:    tui.DefaultKeyMap(),
+		version: "v0.1.0-dev", // TODO: Get from build info
 	}
 }
 
@@ -45,8 +48,12 @@ func (m TUIModel) Init() tea.Cmd {
 // Update handles messages and updates the model
 func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		return m, nil
+
 	case tea.KeyMsg:
-		if key.Matches(msg, quitKeys) {
+		if key.Matches(msg, m.keys.Quit) {
 			m.quitting = true
 			return m, tea.Quit
 		}
@@ -71,30 +78,74 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the application UI
 func (m TUIModel) View() string {
+	var s strings.Builder
+
+	// Render logo
+	s.WriteString("\n")
+	s.WriteString(m.renderLogo())
+	s.WriteString("\n\n")
+
+	// Error state
 	if m.err != nil {
-		return fmt.Sprintf("\n  %s %v\n\n  %s\n\n",
-			styles.Error.Render("Error:"),
-			m.err,
-			quitKeys.Help().Desc,
-		)
+		s.WriteString(tui.RenderBorder(63))
+		s.WriteString("\n\n")
+		s.WriteString(styles.Error.Render("✗ Error"))
+		s.WriteString("\n\n")
+		s.WriteString(styles.Subtitle.Render(fmt.Sprintf("  %v", m.err)))
+		s.WriteString("\n\n")
+		s.WriteString(tui.RenderBorder(63))
+		s.WriteString("\n")
+		s.WriteString(tui.RenderKeyBindings(m.keys.Quit))
+		s.WriteString("\n")
+		return s.String()
 	}
 
+	// Success state
 	if m.authSuccess {
-		return fmt.Sprintf("\n  %s Connected to %s as %s\n\n  %s\n\n",
-			styles.Success.Render("✓"),
-			styles.Info.Render(m.teamName),
-			styles.Highlight.Render(m.userName),
-			quitKeys.Help().Desc,
-		)
+		s.WriteString(tui.RenderBorder(63))
+		s.WriteString("\n\n")
+		s.WriteString(styles.Success.Render("✓ Connected Successfully"))
+		s.WriteString("\n\n")
+		s.WriteString(styles.Label.Render("Workspace: ") + styles.Info.Render(m.teamName))
+		s.WriteString("\n")
+		s.WriteString(styles.Label.Render("User:      ") + styles.Highlight.Render(m.userName))
+		s.WriteString("\n\n")
+		s.WriteString(styles.Subtitle.Render("Ready to start messaging!"))
+		s.WriteString("\n\n")
+		s.WriteString(tui.RenderBorder(63))
+		s.WriteString("\n")
+		s.WriteString(tui.RenderKeyBindings(m.keys.Quit))
+		s.WriteString("\n")
+		return s.String()
 	}
 
-	str := fmt.Sprintf("\n\n   %s %s %s\n\n",
+	// Loading state
+	s.WriteString(tui.RenderBorder(63))
+	s.WriteString("\n\n")
+	s.WriteString(fmt.Sprintf("%s %s",
 		m.spinner.View(),
-		styles.Subtitle.Render("Connecting to Slack..."),
-		quitKeys.Help().Desc,
-	)
-	if m.quitting {
-		return str + "\n"
+		styles.Label.Render("Connecting to Slack...")))
+	s.WriteString("\n\n")
+	s.WriteString(styles.Subtitle.Render("Authenticating with workspace"))
+	s.WriteString("\n\n")
+	s.WriteString(tui.RenderBorder(63))
+	s.WriteString("\n")
+	s.WriteString(tui.RenderKeyBindings(m.keys.Quit))
+	s.WriteString("\n")
+
+	return s.String()
+}
+
+// renderLogo renders the application logo
+func (m TUIModel) renderLogo() string {
+	if m.width < components.MinWidth() {
+		return components.SmallRender(m.version, m.width)
 	}
-	return str
+
+	return components.Render(components.Opts{
+		Version:      m.version,
+		Width:        m.width,
+		FillColor:    styles.ColourDim,
+		VersionColor: styles.Tertiary,
+	})
 }
