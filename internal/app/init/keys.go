@@ -24,12 +24,12 @@ func defaultKeyMap() keyMap {
 			key.WithHelp("enter", "continue"),
 		),
 		Up: key.NewBinding(
-			key.WithKeys("up", "k"),
-			key.WithHelp("↑/k", "move up"),
+			key.WithKeys("up"),
+			key.WithHelp("↑", "move up"),
 		),
 		Down: key.NewBinding(
-			key.WithKeys("down", "j"),
-			key.WithHelp("↓/j", "move down"),
+			key.WithKeys("down"),
+			key.WithHelp("↓", "move down"),
 		),
 		Toggle: key.NewBinding(
 			key.WithKeys(" ", "space"),

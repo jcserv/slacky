@@ -14,6 +14,7 @@ type Step int
 const (
 	StepWelcome Step = iota
 	StepBotToken
+	StepBotTokenTesting
 	StepSocketToken
 	StepTesting
 	StepPreferences

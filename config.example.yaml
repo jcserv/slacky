@@ -11,8 +11,5 @@ ui:
   # Theme: default, dark, or light
   theme: "default"
 
-  # Enable vim-style keybindings
-  vim_mode: true
-
   # Show timestamps on messages
   show_timestamps: true

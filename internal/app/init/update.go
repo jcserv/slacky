@@ -28,17 +28,17 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			return handleEnter(m)
 
 		case key.Matches(msg, keys.Up):
-			if m.step == StepPreferences && m.prefCursor > 0 {
-				m.prefCursor--
-			}
+			// if m.step == StepPreferences && m.prefCursor > 0 {
+			// 	m.prefCursor--
+			// }
 			if m.step == StepAuthFailed && m.authFailCursor > 0 {
 				m.authFailCursor--
 			}
 
 		case key.Matches(msg, keys.Down):
-			if m.step == StepPreferences && m.prefCursor < 1 {
-				m.prefCursor++
-			}
+			// if m.step == StepPreferences && m.prefCursor < 1 {
+			// 	m.prefCursor++
+			// }
 			if m.step == StepAuthFailed && m.authFailCursor < 2 {
 				m.authFailCursor++
 			}
@@ -47,12 +47,22 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.step == StepPreferences {
 				switch m.prefCursor {
 				case 0:
-					m.vimMode = !m.vimMode
-				case 1:
 					m.showTimestamps = !m.showTimestamps
 				}
 			}
 		}
+
+	case botTokenTestMsg:
+		if msg.err != nil {
+			m.err = msg.err
+			m.step = StepAuthFailed
+			return m, nil
+		}
+		m.teamName = msg.teamName
+		m.userName = msg.userName
+		m.step = StepSocketToken
+		m.socketToken.Focus()
+		return m, textinput.Blink
 
 	case authTestMsg:
 		if msg.err != nil {
@@ -66,7 +76,7 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		if m.step == StepTesting {
+		if m.step == StepBotTokenTesting || m.step == StepTesting {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
@@ -109,10 +119,9 @@ func handleEnter(m Model) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.err = nil
-		m.step = StepSocketToken
+		m.step = StepBotTokenTesting
 		m.botToken.Blur()
-		m.socketToken.Focus()
-		return m, textinput.Blink
+		return m, tea.Batch(m.spinner.Tick, testBotToken(m.botToken.Value()))
 
 	case StepSocketToken:
 		value := strings.TrimSpace(m.socketToken.Value())

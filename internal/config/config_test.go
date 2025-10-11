@@ -18,7 +18,6 @@ func TestDefaultConfig(t *testing.T) {
 
 	assert.NotNil(t, cfg)
 	assert.Equal(t, "default", cfg.UI.Theme)
-	assert.True(t, cfg.UI.VimMode)
 	assert.True(t, cfg.UI.ShowTimestamps)
 	assert.Empty(t, cfg.Workspace.BotToken, "default config should have empty tokens")
 	assert.Empty(t, cfg.Workspace.SocketToken, "default config should have empty tokens")
@@ -118,7 +117,6 @@ func TestSaveAndLoad(t *testing.T) {
   socket_token: xapp-test-token
 ui:
   theme: dark
-  vim_mode: true
   show_timestamps: false
 `
 		err = os.WriteFile(configPath, []byte(yamlContent), 0o600)
@@ -142,7 +140,6 @@ ui:
 		assert.Equal(t, "xoxb-test-token", cfg.Workspace.BotToken)
 		assert.Equal(t, "xapp-test-token", cfg.Workspace.SocketToken)
 		assert.Equal(t, "dark", cfg.UI.Theme)
-		assert.True(t, cfg.UI.VimMode)
 		assert.False(t, cfg.UI.ShowTimestamps)
 	})
 }

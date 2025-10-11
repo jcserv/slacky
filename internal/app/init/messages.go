@@ -18,12 +18,36 @@ type (
 		err      error
 	}
 
+	botTokenTestMsg struct {
+		teamName string
+		userName string
+		err      error
+	}
+
 	configSavedMsg struct{}
 
 	errMsg struct {
 		err error
 	}
 )
+
+// testBotToken tests bot token authentication with Slack
+func testBotToken(botToken string) tea.Cmd {
+	return func() tea.Msg {
+		// Use a dummy socket token for client creation (not used in auth test)
+		client := slack.New(botToken, "dummy-socket-token")
+
+		ctx := context.Background()
+		authResp, err := client.TestAuth(ctx)
+		if err != nil {
+			return botTokenTestMsg{err: err}
+		}
+		return botTokenTestMsg{
+			teamName: authResp.Team,
+			userName: authResp.User,
+		}
+	}
+}
 
 // testAuth tests authentication with Slack
 func testAuth(botToken, socketToken string) tea.Cmd {

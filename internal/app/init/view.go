@@ -24,10 +24,10 @@ func view(m Model) string {
 	s.WriteString("\n\n")
 
 	if m.step == StepAuthFailed {
-		return renderAuthFailedView(m, s)
+		return renderAuthFailedView(m, &s)
 	}
 
-	if m.step >= StepWelcome && m.step < StepPreferences {
+	if m.step >= StepWelcome && m.step < StepPreferences && m.step != StepBotTokenTesting && m.step != StepTesting {
 		s.WriteString(styles.Highlight.Render("📋 Get your tokens from https://api.slack.com/apps"))
 		s.WriteString("\n")
 		s.WriteString(styles.Subtitle.Render("  • Bot Token: OAuth & Permissions → Bot User OAuth Token"))
@@ -47,10 +47,17 @@ func view(m Model) string {
 
 	// Render bot token step
 	if m.step >= StepBotToken {
-		if m.step > StepBotToken {
+		if m.step > StepBotTokenTesting {
 			s.WriteString(styles.Completed.Render("✓ Bot Token"))
 			s.WriteString("\n")
 			s.WriteString(styles.Dim.Render("  " + maskToken(m.botToken.Value())))
+			s.WriteString("\n\n")
+		} else if m.step == StepBotTokenTesting {
+			s.WriteString(styles.Completed.Render("✓ Bot Token"))
+			s.WriteString("\n")
+			s.WriteString(styles.Dim.Render("  " + maskToken(m.botToken.Value())))
+			s.WriteString("\n\n")
+			s.WriteString(fmt.Sprintf("%s Testing bot token...", m.spinner.View()))
 			s.WriteString("\n\n")
 		} else {
 			s.WriteString(styles.Label.Render("Bot Token"))
@@ -103,23 +110,12 @@ func view(m Model) string {
 		s.WriteString(styles.Label.Render("Preferences"))
 		s.WriteString("\n\n")
 
-		vimIcon := "☐"
-		if m.vimMode {
-			vimIcon = "☑"
-		}
-		vimLine := fmt.Sprintf("  %s Enable vim-style keybindings", vimIcon)
-		if m.prefCursor == 0 {
-			s.WriteString(styles.Highlight.Render("> ") + vimLine + "\n")
-		} else {
-			s.WriteString(styles.Dim.Render("  ") + vimLine + "\n")
-		}
-
 		timestampIcon := "☐"
 		if m.showTimestamps {
 			timestampIcon = "☑"
 		}
 		timestampLine := fmt.Sprintf("  %s Show timestamps on messages", timestampIcon)
-		if m.prefCursor == 1 {
+		if m.prefCursor == 0 {
 			s.WriteString(styles.Highlight.Render("> ") + timestampLine + "\n")
 		} else {
 			s.WriteString(styles.Dim.Render("  ") + timestampLine + "\n")
@@ -162,7 +158,7 @@ func view(m Model) string {
 }
 
 // renderAuthFailedView renders the authentication failed view
-func renderAuthFailedView(m Model, s strings.Builder) string {
+func renderAuthFailedView(m Model, s *strings.Builder) string {
 	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n\n")
 	s.WriteString(styles.Error.Render("✗ Authentication failed"))
@@ -179,12 +175,12 @@ func renderAuthFailedView(m Model, s strings.Builder) string {
 		s.WriteString(styles.Dim.Render("  ") + editBotLine + "\n")
 	}
 
-	editSocketLine := "  Edit Socket Token"
-	if m.authFailCursor == 1 {
-		s.WriteString(styles.Highlight.Render("> ") + editSocketLine + "\n")
-	} else {
-		s.WriteString(styles.Dim.Render("  ") + editSocketLine + "\n")
-	}
+	// editSocketLine := "  Edit Socket Token"
+	// if m.authFailCursor == 1 {
+	// 	s.WriteString(styles.Highlight.Render("> ") + editSocketLine + "\n")
+	// } else {
+	// 	s.WriteString(styles.Dim.Render("  ") + editSocketLine + "\n")
+	// }
 
 	retryLine := "  Retry Connection"
 	if m.authFailCursor == 2 {
