@@ -1,0 +1,1 @@
+- `slacky` when no config -> should take you to init flow  

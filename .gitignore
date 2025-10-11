@@ -1,2 +1,6 @@
 coverage.txt
 dist/
+**/.env
+
+# build artifacts
+slacky
