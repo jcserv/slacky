@@ -491,7 +491,7 @@ func (m initModel) View() string {
 	// Help text
 	s.WriteString(styles.Border.Render("───────────────────────────────────────────────────────────────"))
 	s.WriteString("\n")
-	s.WriteString(styles.Help.Render("Press Enter to continue • Ctrl+C to quit"))
+	s.WriteString(styles.Help.Render("Press enter to continue • ctrl+c to quit"))
 	s.WriteString("\n")
 
 	return s.String()

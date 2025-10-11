@@ -34,8 +34,8 @@ type Model struct {
 }
 
 var quitKeys = key.NewBinding(
-	key.WithKeys("q", "esc", "ctrl+c"),
-	key.WithHelp("", "press q to quit"),
+	key.WithKeys("esc", "ctrl+c"),
+	key.WithHelp("", "ctrl+c to quit"),
 )
 
 // New creates a new application model
