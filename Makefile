@@ -1,5 +1,5 @@
 build:
-	go build -o slacky main.go
+	go build -o slacky ./cmd/slacky
 
 run:
 	./slacky
@@ -13,3 +13,10 @@ clean-config:
 clean-all: clean clean-config
 
 dev: clean build run
+
+lint:
+	go fmt ./...
+	golangci-lint run ./...
+
+test:
+	go test ./...
