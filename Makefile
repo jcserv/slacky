@@ -1,3 +1,5 @@
+.PHONY: build run clean clean-config clean-all dev lint test test-verbose test-short test-coverage test-update
+
 build:
 	go build -o main main.go
 
@@ -33,5 +35,5 @@ test-coverage:
 	go tool cover -html=coverage.txt -o coverage.html
 	@echo "Coverage report generated at coverage.html"
 
-test-update-golden:
+test-update:
 	UPDATE_GOLDEN=true go test ./...

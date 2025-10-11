@@ -89,6 +89,9 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+// Subtests must run sequentially (Save before Load)
+//
+//nolint:tparallel
 func TestSaveAndLoad(t *testing.T) {
 	t.Parallel()
 
@@ -103,8 +106,7 @@ func TestSaveAndLoad(t *testing.T) {
 	configPath := filepath.Join(tempDir, ".config", "slacky", "config.yaml")
 
 	t.Run("Save creates config file", func(t *testing.T) {
-		t.Parallel()
-
+		//nolint:paralleltest
 		// Save to temp location using the actual Save logic
 		configDir := filepath.Dir(configPath)
 		err := os.MkdirAll(configDir, 0o755)
@@ -128,8 +130,7 @@ ui:
 	})
 
 	t.Run("Load reads config file", func(t *testing.T) {
-		t.Parallel()
-
+		//nolint:paralleltest
 		// Read the config we just saved using gopkg.in/yaml.v3
 		data, err := os.ReadFile(configPath)
 		require.NoError(t, err)
