@@ -29,7 +29,7 @@ func TestRender(t *testing.T) {
 		t.Error("Render() does not contain ASCII art")
 	}
 
-	if !strings.Contains(result, "/") {
+	if !strings.Contains(result, fillCharacter) {
 		t.Error("Render() does not contain diagonal slashes")
 	}
 

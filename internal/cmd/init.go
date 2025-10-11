@@ -449,7 +449,7 @@ func (m initModel) View() string {
 	}
 
 	if m.step >= stepPreferences && m.step != stepComplete && m.step != stepError {
-		s.WriteString(styles.Label.Render("UI Preferences"))
+		s.WriteString(styles.Label.Render("Preferences"))
 		s.WriteString("\n\n")
 
 		vimIcon := "☐"

@@ -1,3 +1,5 @@
-- refactor: split out text into a json file; i18n
+- use charm/huh for form
+- can move connection test to after token is accepted
+- refactor: split out text into a toml file using go-i18n
 - main screen should display in an alternate screen; similar to init
 - tests
