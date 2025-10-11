@@ -7,6 +7,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/jcserv/slacky/internal/config"
+	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
@@ -67,6 +68,10 @@ func initialModel(existingCfg *config.Config) Model {
 		showTimestamps = existingCfg.UI.ShowTimestamps
 	}
 
+	// Create localizer with detected locale
+	locale := slackyI18n.DetectLocale()
+	localizer := slackyI18n.NewLocalizer(locale)
+
 	return Model{
 		step:           StepWelcome,
 		botToken:       botInput,
@@ -75,5 +80,6 @@ func initialModel(existingCfg *config.Config) Model {
 		vimMode:        vimMode,
 		showTimestamps: showTimestamps,
 		existingConfig: existingCfg,
+		localizer:      localizer,
 	}
 }

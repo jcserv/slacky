@@ -1,0 +1,194 @@
+# English translations for Slacky
+
+# UI - General UI elements
+[ui.quit]
+other = "quit"
+
+[ui.help]
+other = "toggle help"
+
+[ui.continue]
+other = "continue"
+
+[ui.enter]
+other = "enter"
+
+# Init Wizard
+[init.title]
+other = "Thanks for trying out Slacky!"
+
+[init.subtitle]
+other = "Let's set up your Slack workspace connection"
+
+[init.tokens_help]
+other = "📋 Get your tokens from https://api.slack.com/apps"
+
+[init.bot_token_help]
+other = "  • Bot Token: OAuth & Permissions → Bot User OAuth Token"
+
+[init.socket_token_help]
+other = "  • Socket Token: Socket Mode → App-Level Token"
+
+[init.welcome_prompt]
+other = "Press enter to continue"
+
+[init.bot_token_label]
+other = "Bot Token"
+
+[init.bot_token_prompt]
+other = "Enter your Bot User OAuth Token (starts with xoxb-)"
+
+[init.socket_token_label]
+other = "Socket Token"
+
+[init.socket_token_prompt]
+other = "Enter your App-Level Token for Socket Mode (starts with xapp-)"
+
+[init.testing_bot_token]
+other = "Testing bot token..."
+
+[init.testing_connection]
+other = "Testing connection..."
+
+[init.connected]
+one = "✓ Connected to {{.TeamName}} as {{.UserName}}"
+other = "✓ Connected to {{.TeamName}} as {{.UserName}}"
+
+[init.preferences_label]
+other = "Preferences"
+
+[init.show_timestamps]
+other = "Show timestamps on messages"
+
+[init.config_saved]
+other = "✓ Configuration saved!"
+
+[init.config_file_path]
+other = "Config file: {{.Path}}"
+
+[init.starting]
+other = "Starting Slacky..."
+
+[init.auth_failed]
+other = "✗ Authentication failed"
+
+[init.what_to_do]
+other = "What would you like to do?"
+
+[init.edit_bot_token]
+other = "Edit Bot Token"
+
+[init.edit_socket_token]
+other = "Edit Socket Token"
+
+[init.retry_connection]
+other = "Retry Connection"
+
+# Main TUI
+[tui.connecting]
+other = "Connecting to Slack..."
+
+[tui.authenticating]
+other = "Authenticating with workspace"
+
+[tui.connected]
+other = "✓ Connected Successfully"
+
+[tui.workspace_label]
+other = "Workspace:"
+
+[tui.user_label]
+other = "User:"
+
+[tui.ready]
+other = "Ready to start messaging!"
+
+# Error messages
+[error.general]
+other = "✗ Error"
+
+[error.auth_failed]
+other = "authentication failed: {{.Error}}"
+
+[error.config_not_found]
+other = "config file not found"
+
+[error.invalid_config]
+other = "invalid config file"
+
+[error.bot_token_required]
+other = "bot_token is required"
+
+[error.socket_token_required]
+other = "socket_token is required"
+
+[error.init_failed]
+other = "init failed: {{.Error}}"
+
+[error.config_load_failed]
+other = "failed to load config: {{.Error}}"
+
+[error.invalid_config_error]
+other = "invalid config: {{.Error}}"
+
+[error.app_create_failed]
+other = "failed to create app instance: {{.Error}}"
+
+[error.tui_run_error]
+other = "TUI run error: {{.Error}}"
+
+[error.please_check_tokens]
+other = "Please check your tokens and try again."
+
+[error.press_enter_exit]
+other = "Press Enter to exit"
+
+# CLI Commands
+[cli.short_description]
+other = "A terminal client for Slack"
+
+[cli.long_description]
+other = "Slacky is a terminal-based Slack client that provides an interactive interface\nfor managing Slack workspaces, channels, and messages directly from your terminal."
+
+[cli.example_start]
+other = "# Start the Slack client\nslacky"
+
+[cli.example_init]
+other = "# Run setup wizard\nslacky init"
+
+[cli.example_version]
+other = "# Show version\nslacky version"
+
+[cli.no_config_found]
+other = "No configuration found. Let's set up Slacky!"
+
+[cli.init_short_description]
+other = "Initialize Slacky configuration"
+
+[cli.init_long_description]
+other = "Run the interactive setup wizard to configure your Slack workspace connection.\nYou'll need a Bot Token and Socket Token from https://api.slack.com/apps"
+
+[cli.version_description]
+other = "Print version information"
+
+# Key bindings
+[keys.quit]
+other = "quit"
+
+[keys.help]
+other = "toggle help"
+
+[keys.enter]
+other = "enter"
+
+[keys.continue]
+other = "continue"
+
+[keys.up]
+other = "up"
+
+[keys.down]
+other = "down"
+
+[keys.toggle]
+other = "toggle"

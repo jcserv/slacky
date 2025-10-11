@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/jcserv/slacky/internal/config"
 )
@@ -42,6 +43,7 @@ type Model struct {
 	width          int
 	logoRendered   string
 	version        string
+	localizer      *i18n.Localizer
 }
 
 // InitResult represents the result of the initialization process

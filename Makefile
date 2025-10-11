@@ -18,8 +18,8 @@ dev: clean build run
 
 lint:
 	go mod tidy
-	go fmt ./...
-	golangci-lint run ./...
+	go fmt .
+	golangci-lint run .
 
 test:
 	go test -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./...

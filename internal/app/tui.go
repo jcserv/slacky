@@ -7,7 +7,9 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
+	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/tui"
 	"github.com/jcserv/slacky/internal/tui/components"
 	"github.com/jcserv/slacky/internal/tui/styles"
@@ -25,6 +27,7 @@ type TUIModel struct {
 	authSuccess bool
 	teamName    string
 	userName    string
+	localizer   *i18n.Localizer
 }
 
 // NewTUI creates a new TUI model with the given app
@@ -32,11 +35,17 @@ func (app *App) NewTUI() TUIModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = styles.Label
+
+	// Create localizer with detected locale
+	locale := slackyI18n.DetectLocale()
+	localizer := slackyI18n.NewLocalizer(locale)
+
 	return TUIModel{
-		app:     app,
-		spinner: s,
-		keys:    tui.DefaultKeyMap(),
-		version: "v0.1.0-dev", // TODO: Get from build info
+		app:       app,
+		spinner:   s,
+		keys:      tui.DefaultKeyMap(),
+		version:   "v0.1.0-dev", // TODO: Get from build info
+		localizer: localizer,
 	}
 }
 
@@ -76,6 +85,18 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
+// localize is a helper function to localize a message by ID with an optional fallback
+func (m TUIModel) localize(messageID string, fallback string) string {
+	cfg := &i18n.LocalizeConfig{
+		MessageID: messageID,
+	}
+	msg, err := m.localizer.Localize(cfg)
+	if err != nil && fallback != "" {
+		return fallback
+	}
+	return msg
+}
+
 // View renders the application UI
 func (m TUIModel) View() string {
 	var s strings.Builder
@@ -89,7 +110,7 @@ func (m TUIModel) View() string {
 	if m.err != nil {
 		s.WriteString(tui.RenderBorder(63))
 		s.WriteString("\n\n")
-		s.WriteString(styles.Error.Render("✗ Error"))
+		s.WriteString(styles.Error.Render("✗ " + m.localize("error.general", "Error")))
 		s.WriteString("\n\n")
 		s.WriteString(styles.Subtitle.Render(fmt.Sprintf("  %v", m.err)))
 		s.WriteString("\n\n")
@@ -104,13 +125,13 @@ func (m TUIModel) View() string {
 	if m.authSuccess {
 		s.WriteString(tui.RenderBorder(63))
 		s.WriteString("\n\n")
-		s.WriteString(styles.Success.Render("✓ Connected Successfully"))
+		s.WriteString(styles.Success.Render(m.localize("tui.connected", "✓ Connected Successfully")))
 		s.WriteString("\n\n")
-		s.WriteString(styles.Label.Render("Workspace: ") + styles.Info.Render(m.teamName))
+		s.WriteString(styles.Label.Render(m.localize("tui.workspace_label", "Workspace:")+" ") + styles.Info.Render(m.teamName))
 		s.WriteString("\n")
-		s.WriteString(styles.Label.Render("User:      ") + styles.Highlight.Render(m.userName))
+		s.WriteString(styles.Label.Render(m.localize("tui.user_label", "User:")+"      ") + styles.Highlight.Render(m.userName))
 		s.WriteString("\n\n")
-		s.WriteString(styles.Subtitle.Render("Ready to start messaging!"))
+		s.WriteString(styles.Subtitle.Render(m.localize("tui.ready", "Ready to start messaging!")))
 		s.WriteString("\n\n")
 		s.WriteString(tui.RenderBorder(63))
 		s.WriteString("\n")
@@ -124,9 +145,9 @@ func (m TUIModel) View() string {
 	s.WriteString("\n\n")
 	s.WriteString(fmt.Sprintf("%s %s",
 		m.spinner.View(),
-		styles.Label.Render("Connecting to Slack...")))
+		styles.Label.Render(m.localize("tui.connecting", "Connecting to Slack..."))))
 	s.WriteString("\n\n")
-	s.WriteString(styles.Subtitle.Render("Authenticating with workspace"))
+	s.WriteString(styles.Subtitle.Render(m.localize("tui.authenticating", "Authenticating with workspace")))
 	s.WriteString("\n\n")
 	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n")

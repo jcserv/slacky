@@ -1,2 +1,1 @@
-- can move connection test to after token is accepted
-- refactor: split out text into a toml file using go-i18n
+- get version from build info
