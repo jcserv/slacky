@@ -1,6 +1,8 @@
 package init
 
 import (
+	"log/slog"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -8,6 +10,7 @@ import (
 
 	"github.com/jcserv/slacky/internal/config"
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
+	tuiKeys "github.com/jcserv/slacky/internal/tui/keys"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
@@ -72,6 +75,13 @@ func initialModel(existingCfg *config.Config) Model {
 	locale := slackyI18n.DetectLocale()
 	localizer := slackyI18n.NewLocalizer(locale)
 
+	// Load keybindings
+	keyMap, err := tuiKeys.LoadKeybindings(nil, localizer)
+	if err != nil {
+		slog.Warn("Failed to load init keybindings, using defaults", "error", err)
+		keyMap, _ = tuiKeys.LoadKeybindings(nil, localizer)
+	}
+
 	return Model{
 		step:           StepWelcome,
 		botToken:       botInput,
@@ -81,5 +91,6 @@ func initialModel(existingCfg *config.Config) Model {
 		showTimestamps: showTimestamps,
 		existingConfig: existingCfg,
 		localizer:      localizer,
+		keyMap:         keyMap,
 	}
 }

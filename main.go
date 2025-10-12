@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-	// Initialize i18n bundle
 	if err := i18n.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing i18n: %v\n", err)
 		os.Exit(1)

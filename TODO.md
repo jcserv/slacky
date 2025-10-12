@@ -1,8 +1,10 @@
 # current work
-- channels not rendering?
-- search - just display emoji
-- 
+os key recognition: 
+- windows: ctrl
+- mac: cmd
+- linux: ctrl
 
+- custom keymapping support
 
 # mvp
 
@@ -70,16 +72,13 @@ message input
     - code (ctrl+shift+c)
     - code block (ctrl+option+shift+c)
 
-os key recognition: 
-- windows: ctrl
-- mac: cmd
-- linux: 
-
 ui/ux:
 - keybind to copy current channel
   - name
   - link
   - huddle link 
+
+add channels/conversations to tabs
 
 # eventually
 - channel management

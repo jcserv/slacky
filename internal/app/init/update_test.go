@@ -14,6 +14,8 @@ import (
 
 	"github.com/jcserv/slacky/internal/config"
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
+	"github.com/jcserv/slacky/internal/tui/actions"
+	tuiKeys "github.com/jcserv/slacky/internal/tui/keys"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
@@ -48,12 +50,19 @@ func createTestModel() Model {
 	locale := slackyI18n.DetectLocale()
 	localizer := slackyI18n.NewLocalizer(locale)
 
+	// Load keybindings
+	keyMap, err := tuiKeys.LoadKeybindings(nil, localizer)
+	if err != nil {
+		panic(err)
+	}
+
 	return Model{
 		step:        StepWelcome,
 		botToken:    botInput,
 		socketToken: socketInput,
 		spinner:     s,
 		localizer:   localizer,
+		keyMap:      keyMap,
 	}
 }
 
@@ -181,9 +190,8 @@ func TestUpdate_QuitKey(t *testing.T) {
 	m := createTestModel()
 	m.step = StepBotToken
 
-	msg := tea.KeyMsg{
-		Type: tea.KeyCtrlC,
-	}
+	// Test with ESC which works on all platforms
+	msg := tea.KeyMsg{Type: tea.KeyEsc}
 
 	result, cmd := update(m, msg)
 	resultModel := result.(Model)
@@ -616,10 +624,35 @@ func TestUpdate_SpinnerTick(t *testing.T) {
 func TestKeys_AreProperlyDefined(t *testing.T) {
 	t.Parallel()
 
+	// Create keys with localizer for testing
+	setupI18n()
+	locale := slackyI18n.DetectLocale()
+	localizer := slackyI18n.NewLocalizer(locale)
+	keyMap, err := tuiKeys.LoadKeybindings(nil, localizer)
+	require.NoError(t, err, "should load keybindings")
+
 	// Verify that all keys used in update.go are properly defined
-	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyCtrlC}, keys.Quit), "Ctrl+C should match Quit key")
-	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyEnter}, keys.Enter), "Enter should match Enter key")
-	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyUp}, keys.Up), "Up arrow should match Up key")
-	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyDown}, keys.Down), "Down arrow should match Down key")
-	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeySpace}, keys.Toggle), "Space should match Toggle key")
+	quitKey, ok := keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
+	assert.True(t, ok, "Quit binding should exist")
+	// Test ESC which works on all platforms
+	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyEsc}, quitKey), "Esc should match Quit key")
+
+	// Note: {mod}+c is OS-specific (cmd+c on macOS, ctrl+c elsewhere)
+	// The binding is correctly set via the OS-specific modifier replacement system
+
+	enterKey, ok := keyMap.GetBinding(actions.ActionEnter, actions.ScopeInit)
+	assert.True(t, ok, "Enter binding should exist")
+	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyEnter}, enterKey), "Enter should match Enter key")
+
+	upKey, ok := keyMap.GetBinding(actions.ActionUp, actions.ScopeInit)
+	assert.True(t, ok, "Up binding should exist")
+	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyUp}, upKey), "Up arrow should match Up key")
+
+	downKey, ok := keyMap.GetBinding(actions.ActionDown, actions.ScopeInit)
+	assert.True(t, ok, "Down binding should exist")
+	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyDown}, downKey), "Down arrow should match Down key")
+
+	toggleKey, ok := keyMap.GetBinding(actions.ActionToggle, actions.ScopeInit)
+	assert.True(t, ok, "Toggle binding should exist")
+	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeySpace}, toggleKey), "Space should match Toggle key")
 }

@@ -1,4 +1,6 @@
 coverage.txt
+coverage.html
+
 dist/
 **/.env
 

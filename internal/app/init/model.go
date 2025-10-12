@@ -7,6 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/jcserv/slacky/internal/config"
+	tuiKeys "github.com/jcserv/slacky/internal/tui/keys"
 )
 
 // Step represents the current step in the initialization wizard
@@ -44,6 +45,7 @@ type Model struct {
 	logoRendered   string
 	version        string
 	localizer      *i18n.Localizer
+	keyMap         *tuiKeys.ScopedKeyMap
 }
 
 // InitResult represents the result of the initialization process

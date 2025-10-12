@@ -172,17 +172,32 @@ other = "Run the interactive setup wizard to configure your Slack workspace conn
 other = "Print version information"
 
 # Key bindings
+
+# Global actions
 [keys.quit]
 other = "quit"
 
 [keys.help]
+other = "help"
+
+[keys.toggle_help]
 other = "toggle help"
 
-[keys.enter]
-other = "enter"
+[keys.refresh]
+other = "refresh"
 
-[keys.continue]
-other = "continue"
+[keys.search]
+other = "search"
+
+[keys.command_bar]
+other = "command bar"
+
+# Navigation actions
+[keys.next_tab]
+other = "next tab"
+
+[keys.prev_tab]
+other = "previous tab"
 
 [keys.up]
 other = "up"
@@ -190,17 +205,146 @@ other = "up"
 [keys.down]
 other = "down"
 
+[keys.left]
+other = "left"
+
+[keys.right]
+other = "right"
+
+[keys.page_up]
+other = "page up"
+
+[keys.page_down]
+other = "page down"
+
+[keys.first_line]
+other = "first line"
+
+[keys.last_line]
+other = "last line"
+
+[keys.go_to_chat]
+other = "go to chat"
+
+[keys.go_to_activity]
+other = "go to activity"
+
+[keys.go_to_user]
+other = "go to user"
+
+# Selection actions
+[keys.enter]
+other = "enter"
+
+[keys.select]
+other = "select"
+
 [keys.toggle]
 other = "toggle"
 
-[keys.next_tab]
-other = "next tab"
+[keys.cancel]
+other = "cancel"
 
-[keys.prev_tab]
-other = "previous tab"
+[keys.continue]
+other = "continue"
+
+# Message actions
+[keys.send_message]
+other = "send message"
+
+[keys.edit_message]
+other = "edit message"
+
+[keys.delete_message]
+other = "delete message"
+
+[keys.reply_in_thread]
+other = "reply in thread"
+
+[keys.react]
+other = "react to message"
+
+[keys.save_message]
+other = "save message"
+
+[keys.pin_message]
+other = "pin message"
+
+[keys.copy_link]
+other = "copy link"
+
+[keys.mark_unread]
+other = "mark as unread"
+
+[keys.forward_message]
+other = "forward message"
+
+[keys.schedule_message]
+other = "schedule message"
+
+# Text formatting actions
+[keys.bold]
+other = "bold text"
+
+[keys.italic]
+other = "italic text"
+
+[keys.strikethrough]
+other = "strikethrough"
+
+[keys.link]
+other = "insert link"
+
+[keys.ordered_list]
+other = "ordered list"
+
+[keys.bullet_list]
+other = "bullet list"
+
+[keys.blockquote]
+other = "blockquote"
+
+[keys.code]
+other = "inline code"
+
+[keys.code_block]
+other = "code block"
+
+# Channel/DM actions
+[keys.star_channel]
+other = "star channel"
+
+[keys.open_channel]
+other = "open channel"
+
+[keys.copy_channel_name]
+other = "copy channel name"
+
+[keys.copy_channel_link]
+other = "copy channel link"
+
+# User actions
+[keys.set_status]
+other = "set status"
+
+[keys.open_user_info]
+other = "open user info"
+
+[keys.open_dm]
+other = "open direct message"
 
 [keys.select_user]
 other = "select user"
+
+# File actions
+[keys.attach_file]
+other = "attach file"
+
+[keys.open_file]
+other = "open file"
+
+[keys.download_file]
+other = "download file"
 
 # Tabs
 [tabs.chat]

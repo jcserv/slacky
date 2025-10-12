@@ -13,3 +13,45 @@ ui:
 
   # Show timestamps on messages
   show_timestamps: true
+
+# Keybindings (optional)
+# Override default keybindings by specifying custom key mappings
+# Use {mod} for OS-specific modifier (Cmd on macOS, Ctrl on Windows/Linux)
+# If not specified, defaults will be used
+# keybindings:
+#   # Global keybindings (available everywhere)
+#   global:
+#     - key: "q"
+#       action: "quit"
+#     - key: "{mod}+k"
+#       action: "search"
+#     - key: "1"
+#       action: "go_to_chat"
+#     - key: "2"
+#       action: "go_to_activity"
+#     - key: "3"
+#       action: "go_to_user"
+#
+#   # Chat view keybindings
+#   chat:
+#     - key: "e"
+#       action: "edit_message"
+#     - key: "d"
+#       action: "delete_message"
+#     - key: "t"
+#       action: "reply_in_thread"
+#     - key: "r"
+#       action: "react"
+#     - key: "s"
+#       action: "save_message"
+#
+#   # Message input keybindings (when composing a message)
+#   message:
+#     - key: "{mod}+b"
+#       action: "bold"
+#     - key: "{mod}+i"
+#       action: "italic"
+#     - key: "{mod}+shift+c"
+#       action: "code"
+#     - key: "{mod}+enter"
+#       action: "send_message"

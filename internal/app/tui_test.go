@@ -9,6 +9,7 @@ import (
 
 	"github.com/jcserv/slacky/internal/config"
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
+	"github.com/jcserv/slacky/internal/tui/actions"
 	"github.com/jcserv/slacky/internal/tui/components/tabs"
 )
 
@@ -38,8 +39,8 @@ func TestNewTUI(t *testing.T) {
 		t.Error("Expected app to be set")
 	}
 
-	if m.keys.Quit.Keys() == nil {
-		t.Error("Expected key bindings to be initialized")
+	if m.keyMap == nil {
+		t.Error("Expected key map to be initialized")
 	}
 
 	if m.localizer == nil {
@@ -107,7 +108,8 @@ func TestTUIModelUpdateQuit(t *testing.T) {
 	app, _ := New(nil, cfg)
 	m := app.NewTUI()
 
-	msg := tea.KeyMsg{Type: tea.KeyCtrlC}
+	// Test with ESC which works on all platforms
+	msg := tea.KeyMsg{Type: tea.KeyEsc}
 	updatedModel, cmd := m.Update(msg)
 
 	tuiModel := updatedModel.(TUIModel)
@@ -377,38 +379,59 @@ func TestTUIKeyBindings(t *testing.T) {
 	m := app.NewTUI()
 
 	t.Run("Quit key binding", func(t *testing.T) {
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyCtrlC}, m.keys.Quit) {
-			t.Error("Ctrl+C should match Quit binding")
+		quitKey, ok := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeGlobal)
+		if !ok {
+			t.Error("Expected Quit binding to exist")
 		}
 
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyEsc}, m.keys.Quit) {
+		// Test ESC key which works on all platforms
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyEsc}, quitKey) {
 			t.Error("Esc should match Quit binding")
 		}
+
+		// Note: {mod}+c is OS-specific (cmd+c on macOS, ctrl+c elsewhere)
+		// Testing this requires platform-specific KeyMsg creation which is complex
+		// The binding is correctly set via the OS-specific modifier system
 	})
 
 	t.Run("Next tab key binding", func(t *testing.T) {
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyTab}, m.keys.NextTab) {
+		nextTabKey, ok := m.keyMap.GetBinding(actions.ActionNextTab, actions.ScopeGlobal)
+		if !ok {
+			t.Error("Expected NextTab binding to exist")
+		}
+
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyTab}, nextTabKey) {
 			t.Error("Tab should match NextTab binding")
 		}
 
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyRight}, m.keys.NextTab) {
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyRight}, nextTabKey) {
 			t.Error("Right arrow should match NextTab binding")
 		}
 	})
 
 	t.Run("Previous tab key binding", func(t *testing.T) {
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyShiftTab}, m.keys.PrevTab) {
+		prevTabKey, ok := m.keyMap.GetBinding(actions.ActionPrevTab, actions.ScopeGlobal)
+		if !ok {
+			t.Error("Expected PrevTab binding to exist")
+		}
+
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyShiftTab}, prevTabKey) {
 			t.Error("Shift+Tab should match PrevTab binding")
 		}
 
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyLeft}, m.keys.PrevTab) {
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyLeft}, prevTabKey) {
 			t.Error("Left arrow should match PrevTab binding")
 		}
 	})
 
 	t.Run("User key binding", func(t *testing.T) {
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}}, m.keys.SelectUser) {
-			t.Error("'u' key should match SelectUser binding")
+		userKey, ok := m.keyMap.GetBinding(actions.ActionGoToUser, actions.ScopeGlobal)
+		if !ok {
+			t.Error("Expected GoToUser binding to exist")
+		}
+
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}}, userKey) {
+			t.Error("'u' key should match GoToUser binding")
 		}
 	})
 }

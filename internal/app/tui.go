@@ -2,9 +2,9 @@ package app
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -12,8 +12,10 @@ import (
 	"github.com/jcserv/slacky/internal/app/views"
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/tui"
+	"github.com/jcserv/slacky/internal/tui/actions"
 	"github.com/jcserv/slacky/internal/tui/components/statusbar"
 	"github.com/jcserv/slacky/internal/tui/components/tabs"
+	tuiKeys "github.com/jcserv/slacky/internal/tui/keys"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
@@ -21,7 +23,7 @@ import (
 type TUIModel struct {
 	app          *App
 	spinner      spinner.Model
-	keys         tui.KeyMap
+	keyMap       *tuiKeys.ScopedKeyMap
 	tabs         tabs.Model
 	statusBar    statusbar.Model
 	chatView     views.ChatModel
@@ -48,10 +50,18 @@ func (app *App) NewTUI() TUIModel {
 	locale := slackyI18n.DetectLocale()
 	localizer := slackyI18n.NewLocalizer(locale)
 
+	// Load keybindings from config with localizer
+	keyMap, err := tuiKeys.LoadKeybindings(app.config, localizer)
+	if err != nil {
+		slog.Warn("Failed to load keybindings, using defaults", "error", err)
+		// Fallback to defaults
+		keyMap, _ = tuiKeys.LoadKeybindings(nil, localizer)
+	}
+
 	return TUIModel{
 		app:          app,
 		spinner:      s,
-		keys:         tui.DefaultKeyMap(),
+		keyMap:       keyMap,
 		tabs:         tabs.NewModel(),
 		statusBar:    statusbar.NewModel(),
 		chatView:     views.NewChatModel(),
@@ -90,24 +100,34 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		// Handle quit
-		if key.Matches(msg, m.keys.Quit) {
+		// Handle quit (always available)
+		if m.keyMap.MatchesAction(msg, actions.ActionQuit, actions.ScopeGlobal) {
 			m.quitting = true
 			return m, tea.Quit
 		}
 
-		// Only handle tab navigation after auth success
+		// Only handle other actions after auth success
 		if m.authSuccess {
 			// Handle tab navigation
-			if key.Matches(msg, m.keys.NextTab) {
+			if m.keyMap.MatchesAction(msg, actions.ActionNextTab, actions.ScopeGlobal) {
 				m.tabs.NextTab()
 				return m, nil
 			}
-			if key.Matches(msg, m.keys.PrevTab) {
+			if m.keyMap.MatchesAction(msg, actions.ActionPrevTab, actions.ScopeGlobal) {
 				m.tabs.PrevTab()
 				return m, nil
 			}
-			if key.Matches(msg, m.keys.SelectUser) {
+
+			// Handle direct view navigation
+			if m.keyMap.MatchesAction(msg, actions.ActionGoToChat, actions.ScopeGlobal) {
+				m.tabs.SetCurrentTab(tabs.ChatTab)
+				return m, nil
+			}
+			if m.keyMap.MatchesAction(msg, actions.ActionGoToActivity, actions.ScopeGlobal) {
+				m.tabs.SetCurrentTab(tabs.ActivityTab)
+				return m, nil
+			}
+			if m.keyMap.MatchesAction(msg, actions.ActionGoToUser, actions.ScopeGlobal) {
 				m.tabs.SetCurrentTab(tabs.UserTab)
 				return m, nil
 			}
@@ -191,7 +211,8 @@ func (m TUIModel) View() string {
 		s.WriteString("\n\n")
 		s.WriteString(tui.RenderBorder(63))
 		s.WriteString("\n")
-		s.WriteString(tui.RenderKeyBindings(m.keys.Quit))
+		quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeGlobal)
+		s.WriteString(tui.RenderKeyBindings(quitKey))
 		s.WriteString("\n")
 		return s.String()
 	}
@@ -209,7 +230,8 @@ func (m TUIModel) View() string {
 		s.WriteString("\n\n")
 		s.WriteString(tui.RenderBorder(63))
 		s.WriteString("\n")
-		s.WriteString(tui.RenderKeyBindings(m.keys.Quit))
+		quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeGlobal)
+		s.WriteString(tui.RenderKeyBindings(quitKey))
 		s.WriteString("\n")
 		return s.String()
 	}

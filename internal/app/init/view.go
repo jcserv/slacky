@@ -7,6 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/jcserv/slacky/internal/tui"
+	"github.com/jcserv/slacky/internal/tui/actions"
 	"github.com/jcserv/slacky/internal/tui/components"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
@@ -144,7 +145,10 @@ func view(m Model) string {
 		}
 
 		s.WriteString("\n")
-		s.WriteString(tui.RenderKeyBindings(keys.Up, keys.Down, keys.Toggle))
+		upKey, _ := m.keyMap.GetBinding(actions.ActionUp, actions.ScopeInit)
+		downKey, _ := m.keyMap.GetBinding(actions.ActionDown, actions.ScopeInit)
+		toggleKey, _ := m.keyMap.GetBinding(actions.ActionToggle, actions.ScopeInit)
+		s.WriteString(tui.RenderKeyBindings(upKey, downKey, toggleKey))
 		s.WriteString("\n")
 	}
 
@@ -161,7 +165,9 @@ func view(m Model) string {
 
 	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n")
-	s.WriteString(tui.RenderKeyBindings(keys.Enter, keys.Quit))
+	enterKey, _ := m.keyMap.GetBinding(actions.ActionEnter, actions.ScopeInit)
+	quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
+	s.WriteString(tui.RenderKeyBindings(enterKey, quitKey))
 	s.WriteString("\n")
 
 	return s.String()
@@ -200,7 +206,11 @@ func renderAuthFailedView(m Model, s *strings.Builder) string {
 	}
 
 	s.WriteString("\n")
-	s.WriteString(tui.RenderKeyBindings(keys.Up, keys.Down, keys.Enter, keys.Quit))
+	upKey, _ := m.keyMap.GetBinding(actions.ActionUp, actions.ScopeInit)
+	downKey, _ := m.keyMap.GetBinding(actions.ActionDown, actions.ScopeInit)
+	enterKey, _ := m.keyMap.GetBinding(actions.ActionEnter, actions.ScopeInit)
+	quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
+	s.WriteString(tui.RenderKeyBindings(upKey, downKey, enterKey, quitKey))
 	s.WriteString("\n")
 	return s.String()
 }

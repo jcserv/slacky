@@ -4,10 +4,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/jcserv/slacky/internal/tui/actions"
 )
 
 // update handles messages and updates the model
@@ -20,14 +21,14 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, keys.Quit):
+		case m.keyMap.MatchesAction(msg, actions.ActionQuit, actions.ScopeInit):
 			m.quitting = true
 			return m, tea.Quit
 
-		case key.Matches(msg, keys.Enter):
+		case m.keyMap.MatchesAction(msg, actions.ActionEnter, actions.ScopeInit):
 			return handleEnter(m)
 
-		case key.Matches(msg, keys.Up):
+		case m.keyMap.MatchesAction(msg, actions.ActionUp, actions.ScopeInit):
 			// if m.step == StepPreferences && m.prefCursor > 0 {
 			// 	m.prefCursor--
 			// }
@@ -35,7 +36,7 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.authFailCursor--
 			}
 
-		case key.Matches(msg, keys.Down):
+		case m.keyMap.MatchesAction(msg, actions.ActionDown, actions.ScopeInit):
 			// if m.step == StepPreferences && m.prefCursor < 1 {
 			// 	m.prefCursor++
 			// }
@@ -43,7 +44,7 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.authFailCursor++
 			}
 
-		case key.Matches(msg, keys.Toggle):
+		case m.keyMap.MatchesAction(msg, actions.ActionToggle, actions.ScopeInit):
 			if m.step == StepPreferences {
 				switch m.prefCursor {
 				case 0:

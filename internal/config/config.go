@@ -16,8 +16,9 @@ var (
 
 // Config represents the application configuration
 type Config struct {
-	Workspace Workspace `yaml:"workspace"`
-	UI        UI        `yaml:"ui"`
+	Workspace   Workspace    `yaml:"workspace"`
+	UI          UI           `yaml:"ui"`
+	Keybindings *Keybindings `yaml:"keybindings,omitempty"`
 }
 
 // Workspace contains Slack workspace credentials
@@ -31,6 +32,22 @@ type UI struct {
 	Theme          string `yaml:"theme"`
 	VimMode        bool   `yaml:"vim_mode"`
 	ShowTimestamps bool   `yaml:"show_timestamps"`
+}
+
+// Keybinding represents a single keybinding configuration
+type Keybinding struct {
+	Key    string `yaml:"key"`
+	Action string `yaml:"action"`
+}
+
+// Keybindings contains keybinding configurations organized by scope
+type Keybindings struct {
+	Global   []Keybinding `yaml:"global,omitempty"`
+	Chat     []Keybinding `yaml:"chat,omitempty"`
+	Message  []Keybinding `yaml:"message,omitempty"`
+	Init     []Keybinding `yaml:"init,omitempty"`
+	User     []Keybinding `yaml:"user,omitempty"`
+	Activity []Keybinding `yaml:"activity,omitempty"`
 }
 
 // DefaultConfig returns a config with default values
