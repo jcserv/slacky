@@ -21,7 +21,7 @@ func RenderKeyBindings(bindings ...key.Binding) string {
 			continue
 		}
 
-		keyPart := help.Key
+		keyPart := formatKeyDisplay(help.Key)
 		descPart := help.Desc
 
 		// Format as [key] description
@@ -29,6 +29,26 @@ func RenderKeyBindings(bindings ...key.Binding) string {
 	}
 
 	return styles.Help.Render(strings.Join(parts, " • "))
+}
+
+// formatKeyDisplay formats key names for better display
+func formatKeyDisplay(key string) string {
+	switch key {
+	case "up":
+		return "↑"
+	case "down":
+		return "↓"
+	case "left":
+		return "←"
+	case "right":
+		return "→"
+	case " ":
+		return "space"
+	case "space":
+		return "space"
+	default:
+		return key
+	}
 }
 
 // RenderBorder renders a horizontal border line
