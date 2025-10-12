@@ -25,7 +25,7 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 
-		case m.keyMap.MatchesAction(msg, actions.ActionEnter, actions.ScopeInit):
+		case m.keyMap.MatchesAction(msg, actions.ActionContinue, actions.ScopeInit):
 			return handleEnter(m)
 
 		case m.keyMap.MatchesAction(msg, actions.ActionUp, actions.ScopeInit):

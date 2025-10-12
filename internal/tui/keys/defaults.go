@@ -11,20 +11,11 @@ type KeybindingDef struct {
 // DefaultGlobalKeybindings returns the default keybindings available globally
 func DefaultGlobalKeybindings() []KeybindingDef {
 	return []KeybindingDef{
-		// Quit
-		{Action: actions.ActionQuit, Keys: []string{"{mod}+c", "esc"}},
-
-		// Help
+		{Action: actions.ActionQuit, Keys: []string{"ctrl+c"}},
 		{Action: actions.ActionHelp, Keys: []string{"?"}},
 		{Action: actions.ActionToggleHelp, Keys: []string{"?"}},
-
-		// Refresh
 		{Action: actions.ActionRefresh, Keys: []string{"r"}},
-
-		// Search
 		{Action: actions.ActionSearch, Keys: []string{"{mod}+k", "/"}},
-
-		// Command bar
 		{Action: actions.ActionCommandBar, Keys: []string{"{mod}+p"}},
 
 		// Tab navigation
@@ -47,7 +38,7 @@ func DefaultGlobalKeybindings() []KeybindingDef {
 		{Action: actions.ActionLastLine, Keys: []string{"G", "end"}},
 
 		// Selection
-		{Action: actions.ActionEnter, Keys: []string{"enter"}},
+		{Action: actions.ActionContinue, Keys: []string{"enter"}},
 		{Action: actions.ActionCancel, Keys: []string{"esc"}},
 	}
 }
@@ -97,11 +88,11 @@ func DefaultMessageKeybindings() []KeybindingDef {
 // DefaultInitKeybindings returns the default keybindings for init wizard
 func DefaultInitKeybindings() []KeybindingDef {
 	return []KeybindingDef{
-		{Action: actions.ActionEnter, Keys: []string{"enter"}},
+		{Action: actions.ActionContinue, Keys: []string{"enter"}},
 		{Action: actions.ActionUp, Keys: []string{"up"}},
 		{Action: actions.ActionDown, Keys: []string{"down"}},
 		{Action: actions.ActionToggle, Keys: []string{" ", "space"}},
-		{Action: actions.ActionQuit, Keys: []string{"{mod}+c", "esc"}},
+		{Action: actions.ActionQuit, Keys: []string{"ctrl+c"}},
 	}
 }
 

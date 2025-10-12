@@ -108,8 +108,7 @@ func TestTUIModelUpdateQuit(t *testing.T) {
 	app, _ := New(nil, cfg)
 	m := app.NewTUI()
 
-	// Test with ESC which works on all platforms
-	msg := tea.KeyMsg{Type: tea.KeyEsc}
+	msg := tea.KeyMsg{Type: tea.KeyCtrlC}
 	updatedModel, cmd := m.Update(msg)
 
 	tuiModel := updatedModel.(TUIModel)
@@ -384,14 +383,10 @@ func TestTUIKeyBindings(t *testing.T) {
 			t.Error("Expected Quit binding to exist")
 		}
 
-		// Test ESC key which works on all platforms
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyEsc}, quitKey) {
-			t.Error("Esc should match Quit binding")
+		// Test Ctrl+C key which is the new quit key
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyCtrlC}, quitKey) {
+			t.Error("Ctrl+C should match Quit binding")
 		}
-
-		// Note: {mod}+c is OS-specific (cmd+c on macOS, ctrl+c elsewhere)
-		// Testing this requires platform-specific KeyMsg creation which is complex
-		// The binding is correctly set via the OS-specific modifier system
 	})
 
 	t.Run("Next tab key binding", func(t *testing.T) {

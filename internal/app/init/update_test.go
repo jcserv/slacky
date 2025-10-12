@@ -190,8 +190,7 @@ func TestUpdate_QuitKey(t *testing.T) {
 	m := createTestModel()
 	m.step = StepBotToken
 
-	// Test with ESC which works on all platforms
-	msg := tea.KeyMsg{Type: tea.KeyEsc}
+	msg := tea.KeyMsg{Type: tea.KeyCtrlC}
 
 	result, cmd := update(m, msg)
 	resultModel := result.(Model)
@@ -635,12 +634,9 @@ func TestKeys_AreProperlyDefined(t *testing.T) {
 	quitKey, ok := keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
 	assert.True(t, ok, "Quit binding should exist")
 	// Test ESC which works on all platforms
-	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyEsc}, quitKey), "Esc should match Quit key")
+	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyCtrlC}, quitKey), "Ctrl+c should match Quit key")
 
-	// Note: {mod}+c is OS-specific (cmd+c on macOS, ctrl+c elsewhere)
-	// The binding is correctly set via the OS-specific modifier replacement system
-
-	enterKey, ok := keyMap.GetBinding(actions.ActionEnter, actions.ScopeInit)
+	enterKey, ok := keyMap.GetBinding(actions.ActionContinue, actions.ScopeInit)
 	assert.True(t, ok, "Enter binding should exist")
 	assert.True(t, key.Matches(tea.KeyMsg{Type: tea.KeyEnter}, enterKey), "Enter should match Enter key")
 

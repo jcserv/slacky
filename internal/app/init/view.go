@@ -165,7 +165,7 @@ func view(m Model) string {
 
 	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n")
-	enterKey, _ := m.keyMap.GetBinding(actions.ActionEnter, actions.ScopeInit)
+	enterKey, _ := m.keyMap.GetBinding(actions.ActionContinue, actions.ScopeInit)
 	quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
 	s.WriteString(tui.RenderKeyBindings(enterKey, quitKey))
 	s.WriteString("\n")
@@ -208,7 +208,7 @@ func renderAuthFailedView(m Model, s *strings.Builder) string {
 	s.WriteString("\n")
 	upKey, _ := m.keyMap.GetBinding(actions.ActionUp, actions.ScopeInit)
 	downKey, _ := m.keyMap.GetBinding(actions.ActionDown, actions.ScopeInit)
-	enterKey, _ := m.keyMap.GetBinding(actions.ActionEnter, actions.ScopeInit)
+	enterKey, _ := m.keyMap.GetBinding(actions.ActionContinue, actions.ScopeInit)
 	quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
 	s.WriteString(tui.RenderKeyBindings(upKey, downKey, enterKey, quitKey))
 	s.WriteString("\n")

@@ -5,52 +5,52 @@ type Action string
 
 // Global actions - available throughout the app
 const (
-	ActionQuit         Action = "quit"
-	ActionHelp         Action = "help"
-	ActionToggleHelp   Action = "toggle_help"
-	ActionRefresh      Action = "refresh"
-	ActionSearch       Action = "search"
-	ActionCommandBar   Action = "command_bar" // Open command palette
+	ActionQuit       Action = "quit"
+	ActionHelp       Action = "help"
+	ActionToggleHelp Action = "toggle_help"
+	ActionRefresh    Action = "refresh"
+	ActionSearch     Action = "search"
+	ActionCommandBar Action = "command_bar" // Open command palette
 )
 
 // Navigation actions
 const (
-	ActionNextTab     Action = "next_tab"
-	ActionPrevTab     Action = "prev_tab"
-	ActionUp          Action = "up"
-	ActionDown        Action = "down"
-	ActionLeft        Action = "left"
-	ActionRight       Action = "right"
-	ActionPageUp      Action = "page_up"
-	ActionPageDown    Action = "page_down"
-	ActionFirstLine   Action = "first_line"
-	ActionLastLine    Action = "last_line"
-	ActionGoToChat    Action = "go_to_chat"
+	ActionNextTab      Action = "next_tab"
+	ActionPrevTab      Action = "prev_tab"
+	ActionUp           Action = "up"
+	ActionDown         Action = "down"
+	ActionLeft         Action = "left"
+	ActionRight        Action = "right"
+	ActionPageUp       Action = "page_up"
+	ActionPageDown     Action = "page_down"
+	ActionFirstLine    Action = "first_line"
+	ActionLastLine     Action = "last_line"
+	ActionGoToChat     Action = "go_to_chat"
 	ActionGoToActivity Action = "go_to_activity"
-	ActionGoToUser    Action = "go_to_user"
+	ActionGoToUser     Action = "go_to_user"
 )
 
 // Selection actions
 const (
-	ActionEnter  Action = "enter"
-	ActionSelect Action = "select"
-	ActionToggle Action = "toggle"
-	ActionCancel Action = "cancel"
+	ActionContinue Action = "continue"
+	ActionSelect   Action = "select"
+	ActionToggle   Action = "toggle"
+	ActionCancel   Action = "cancel"
 )
 
 // Message actions - for chat view
 const (
-	ActionSendMessage      Action = "send_message"
-	ActionEditMessage      Action = "edit_message"
-	ActionDeleteMessage    Action = "delete_message"
-	ActionReplyInThread    Action = "reply_in_thread"
-	ActionReact            Action = "react"
-	ActionSaveMessage      Action = "save_message"
-	ActionPinMessage       Action = "pin_message"
-	ActionCopyLink         Action = "copy_link"
-	ActionMarkUnread       Action = "mark_unread"
-	ActionForwardMessage   Action = "forward_message"
-	ActionScheduleMessage  Action = "schedule_message"
+	ActionSendMessage     Action = "send_message"
+	ActionEditMessage     Action = "edit_message"
+	ActionDeleteMessage   Action = "delete_message"
+	ActionReplyInThread   Action = "reply_in_thread"
+	ActionReact           Action = "react"
+	ActionSaveMessage     Action = "save_message"
+	ActionPinMessage      Action = "pin_message"
+	ActionCopyLink        Action = "copy_link"
+	ActionMarkUnread      Action = "mark_unread"
+	ActionForwardMessage  Action = "forward_message"
+	ActionScheduleMessage Action = "schedule_message"
 )
 
 // Text formatting actions
@@ -76,9 +76,9 @@ const (
 
 // User actions
 const (
-	ActionSetStatus     Action = "set_status"
-	ActionOpenUserInfo  Action = "open_user_info"
-	ActionOpenDM        Action = "open_dm"
+	ActionSetStatus    Action = "set_status"
+	ActionOpenUserInfo Action = "open_user_info"
+	ActionOpenDM       Action = "open_dm"
 )
 
 // File actions
@@ -110,12 +110,12 @@ type ActionInfo struct {
 // Registry maps action names to their metadata
 var Registry = map[Action]ActionInfo{
 	// Global actions
-	ActionQuit:         {Action: ActionQuit, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.quit"},
-	ActionHelp:         {Action: ActionHelp, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.help"},
-	ActionToggleHelp:   {Action: ActionToggleHelp, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.toggle_help"},
-	ActionRefresh:      {Action: ActionRefresh, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.refresh"},
-	ActionSearch:       {Action: ActionSearch, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.search"},
-	ActionCommandBar:   {Action: ActionCommandBar, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.command_bar"},
+	ActionQuit:       {Action: ActionQuit, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.quit"},
+	ActionHelp:       {Action: ActionHelp, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.help"},
+	ActionToggleHelp: {Action: ActionToggleHelp, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.toggle_help"},
+	ActionRefresh:    {Action: ActionRefresh, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.refresh"},
+	ActionSearch:     {Action: ActionSearch, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.search"},
+	ActionCommandBar: {Action: ActionCommandBar, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.command_bar"},
 
 	// Navigation actions
 	ActionNextTab:      {Action: ActionNextTab, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.next_tab"},
@@ -133,10 +133,10 @@ var Registry = map[Action]ActionInfo{
 	ActionGoToUser:     {Action: ActionGoToUser, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.go_to_user"},
 
 	// Selection actions
-	ActionEnter:  {Action: ActionEnter, Scopes: []ActionScope{ScopeGlobal, ScopeInit}, Description: "keys.enter"},
-	ActionSelect: {Action: ActionSelect, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.select"},
-	ActionToggle: {Action: ActionToggle, Scopes: []ActionScope{ScopeInit}, Description: "keys.toggle"},
-	ActionCancel: {Action: ActionCancel, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.cancel"},
+	ActionContinue: {Action: ActionContinue, Scopes: []ActionScope{ScopeGlobal, ScopeInit}, Description: "keys.continue"},
+	ActionSelect:   {Action: ActionSelect, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.select"},
+	ActionToggle:   {Action: ActionToggle, Scopes: []ActionScope{ScopeInit}, Description: "keys.toggle"},
+	ActionCancel:   {Action: ActionCancel, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.cancel"},
 
 	// Message actions
 	ActionSendMessage:     {Action: ActionSendMessage, Scopes: []ActionScope{ScopeChat, ScopeMessage}, Description: "keys.send_message"},
