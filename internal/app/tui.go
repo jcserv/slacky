@@ -11,7 +11,6 @@ import (
 
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/tui"
-	"github.com/jcserv/slacky/internal/tui/components"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
@@ -101,10 +100,7 @@ func (m TUIModel) localize(messageID string, fallback string) string {
 func (m TUIModel) View() string {
 	var s strings.Builder
 
-	// Render logo
 	s.WriteString("\n")
-	s.WriteString(m.renderLogo())
-	s.WriteString("\n\n")
 
 	// Error state
 	if m.err != nil {
@@ -155,18 +151,4 @@ func (m TUIModel) View() string {
 	s.WriteString("\n")
 
 	return s.String()
-}
-
-// renderLogo renders the application logo
-func (m TUIModel) renderLogo() string {
-	if m.width < components.MinWidth() {
-		return components.SmallRender(m.version, m.width)
-	}
-
-	return components.Render(components.Opts{
-		Version:      m.version,
-		Width:        m.width,
-		FillColor:    styles.ColourDim,
-		VersionColor: styles.Tertiary,
-	})
 }

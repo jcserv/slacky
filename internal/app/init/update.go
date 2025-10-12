@@ -83,7 +83,8 @@ func update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case configSavedMsg:
-		m.step = StepComplete
+		// Config saved successfully - skip StepComplete and quit immediately
+		// to allow seamless transition to the main app
 		m.continueToApp = true
 		return m, tea.Quit
 
@@ -154,10 +155,6 @@ func handleEnter(m Model) (tea.Model, tea.Cmd) {
 			m.err = nil
 			return m, tea.Batch(m.spinner.Tick, testAuth(m.botToken.Value(), m.socketToken.Value()))
 		}
-
-	case StepComplete:
-		m.continueToApp = true
-		return m, tea.Quit
 
 	case StepError:
 		m.quitting = true

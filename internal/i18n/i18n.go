@@ -13,9 +13,7 @@ import (
 //go:embed locales/*.toml
 var localeFS embed.FS
 
-var (
-	bundle *i18n.Bundle
-)
+var bundle *i18n.Bundle
 
 // Init initializes the i18n bundle with embedded locale files
 func Init() error {

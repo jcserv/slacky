@@ -6,7 +6,6 @@ import (
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
-	"github.com/jcserv/slacky/internal/config"
 	"github.com/jcserv/slacky/internal/tui"
 	"github.com/jcserv/slacky/internal/tui/components"
 	"github.com/jcserv/slacky/internal/tui/styles"
@@ -129,7 +128,7 @@ func view(m Model) string {
 	}
 
 	// Render preferences step
-	if m.step >= StepPreferences && m.step != StepComplete && m.step != StepError {
+	if m.step >= StepPreferences && m.step != StepError {
 		s.WriteString(styles.Label.Render(m.localize("init.preferences_label", "Preferences")))
 		s.WriteString("\n\n")
 
@@ -147,21 +146,6 @@ func view(m Model) string {
 		s.WriteString("\n")
 		s.WriteString(tui.RenderKeyBindings(keys.Up, keys.Down, keys.Toggle))
 		s.WriteString("\n")
-	}
-
-	// Render completion step
-	if m.step == StepComplete {
-		configPath, _ := config.ConfigPath()
-		s.WriteString(styles.Success.Render(m.localize("init.config_saved", "✓ Configuration saved!")))
-		s.WriteString("\n\n")
-		pathMsg := m.localize("init.config_file_path", fmt.Sprintf("Config file: %s", configPath), map[string]interface{}{
-			"Path": configPath,
-		})
-		s.WriteString(styles.Subtitle.Render(pathMsg))
-		s.WriteString("\n\n")
-		s.WriteString(styles.Info.Render(m.localize("init.starting", "Starting Slacky...")))
-		s.WriteString("\n")
-		return s.String()
 	}
 
 	// Render error step
