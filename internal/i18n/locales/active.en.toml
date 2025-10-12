@@ -192,3 +192,32 @@ other = "down"
 
 [keys.toggle]
 other = "toggle"
+
+[keys.next_tab]
+other = "next tab"
+
+[keys.prev_tab]
+other = "previous tab"
+
+[keys.select_user]
+other = "select user"
+
+# Tabs
+[tabs.chat]
+other = "Chat"
+
+[tabs.activity]
+other = "Activity"
+
+# Status Bar
+[statusbar.channel]
+other = "Channel:"
+
+[statusbar.no_channel]
+other = "No channel selected"
+
+[statusbar.connected]
+other = "Connected"
+
+[statusbar.disconnected]
+other = "Disconnected"

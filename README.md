@@ -22,8 +22,6 @@
 
 a simple, no-frills Slack client in the terminal
 
-heavily inspired by tools like crush & nvim
-
 ## features 🚀
 
 <!-- ![Product demo](TODO) -->
@@ -35,3 +33,9 @@ heavily inspired by tools like crush & nvim
 `brew tap jcserv/cask`
 
 `brew install slacky`
+
+## references 📚
+- crush
+- nvim
+- zuse
+- gh-dash

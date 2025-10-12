@@ -69,6 +69,34 @@ var (
 	Logo = lipgloss.NewStyle().
 		Bold(true).
 		Foreground(Primary)
+
+	// Tabs
+	Tab = lipgloss.NewStyle().
+		Foreground(ColourDim).
+		Padding(0, 2)
+
+	ActiveTab = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(Primary).
+		Background(ColourSubtle).
+		Padding(0, 2)
+
+	TabSeparator = lipgloss.NewStyle().
+		Foreground(ColourSubtle)
+
+	TabsRow = lipgloss.NewStyle().
+		BorderBottom(true).
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(ColourSubtle)
+
+	// Status Bar
+	StatusBar = lipgloss.NewStyle().
+		Foreground(ColourForeground).
+		Background(ColourSubtle).
+		Padding(0, 1).
+		BorderTop(true).
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(ColourSubtle)
 )
 
 var (
@@ -81,33 +109,43 @@ var (
 
 // GetTheme returns a Theme struct with all styles
 type Theme struct {
-	Title     lipgloss.Style
-	Subtitle  lipgloss.Style
-	Label     lipgloss.Style
-	Success   lipgloss.Style
-	Error     lipgloss.Style
-	Info      lipgloss.Style
-	Warning   lipgloss.Style
-	Dim       lipgloss.Style
-	Help      lipgloss.Style
-	Completed lipgloss.Style
-	Highlight lipgloss.Style
-	Border    lipgloss.Style
+	Title        lipgloss.Style
+	Subtitle     lipgloss.Style
+	Label        lipgloss.Style
+	Success      lipgloss.Style
+	Error        lipgloss.Style
+	Info         lipgloss.Style
+	Warning      lipgloss.Style
+	Dim          lipgloss.Style
+	Help         lipgloss.Style
+	Completed    lipgloss.Style
+	Highlight    lipgloss.Style
+	Border       lipgloss.Style
+	Tab          lipgloss.Style
+	ActiveTab    lipgloss.Style
+	TabSeparator lipgloss.Style
+	TabsRow      lipgloss.Style
+	StatusBar    lipgloss.Style
 }
 
 func DefaultTheme() Theme {
 	return Theme{
-		Title:     Title,
-		Subtitle:  Subtitle,
-		Label:     Label,
-		Success:   Success,
-		Error:     Error,
-		Info:      Info,
-		Warning:   Warning,
-		Dim:       Dim,
-		Help:      Help,
-		Completed: Completed,
-		Highlight: Highlight,
-		Border:    Border,
+		Title:        Title,
+		Subtitle:     Subtitle,
+		Label:        Label,
+		Success:      Success,
+		Error:        Error,
+		Info:         Info,
+		Warning:      Warning,
+		Dim:          Dim,
+		Help:         Help,
+		Completed:    Completed,
+		Highlight:    Highlight,
+		Border:       Border,
+		Tab:          Tab,
+		ActiveTab:    ActiveTab,
+		TabSeparator: TabSeparator,
+		TabsRow:      TabsRow,
+		StatusBar:    StatusBar,
 	}
 }
