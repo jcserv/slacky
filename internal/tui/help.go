@@ -38,3 +38,17 @@ func RenderBorder(width int) string {
 	}
 	return styles.Border.Render(strings.Repeat("─", width))
 }
+
+// RenderKeyBindingsWithBorder renders keybinding instructions with a border above them
+func RenderKeyBindingsWithBorder(bindings ...key.Binding) string {
+	if len(bindings) == 0 {
+		return ""
+	}
+
+	var s strings.Builder
+	s.WriteString(RenderBorder(63))
+	s.WriteString("\n")
+	s.WriteString(RenderKeyBindings(bindings...))
+	s.WriteString("\n")
+	return s.String()
+}

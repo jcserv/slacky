@@ -50,17 +50,18 @@ func view(m Model) string {
 		s.WriteString(styles.Subtitle.Render(m.localize("init.bot_token_help", "  • Bot Token: OAuth & Permissions → Bot User OAuth Token")))
 		s.WriteString("\n")
 		s.WriteString(styles.Subtitle.Render(m.localize("init.socket_token_help", "  • Socket Token: Socket Mode → App-Level Token")))
-		s.WriteString("\n\n")
+		s.WriteString("\n")
 	}
 
 	if m.step == StepWelcome {
-		s.WriteString(styles.Highlight.Render(m.localize("init.welcome_prompt", "Press enter to continue")))
-		s.WriteString("\n")
+		enterKey, _ := m.keyMap.GetBinding(actions.ActionContinue, actions.ScopeInit)
+		quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
+		s.WriteString(tui.RenderKeyBindingsWithBorder(enterKey, quitKey))
 		return s.String()
 	}
 
 	s.WriteString(tui.RenderBorder(63))
-	s.WriteString("\n\n")
+	s.WriteString("\n")
 
 	// Render bot token step
 	if m.step >= StepBotToken {
@@ -148,8 +149,7 @@ func view(m Model) string {
 		upKey, _ := m.keyMap.GetBinding(actions.ActionUp, actions.ScopeInit)
 		downKey, _ := m.keyMap.GetBinding(actions.ActionDown, actions.ScopeInit)
 		toggleKey, _ := m.keyMap.GetBinding(actions.ActionToggle, actions.ScopeInit)
-		s.WriteString(tui.RenderKeyBindings(upKey, downKey, toggleKey))
-		s.WriteString("\n")
+		s.WriteString(tui.RenderKeyBindingsWithBorder(upKey, downKey, toggleKey))
 	}
 
 	// Render error step
@@ -163,12 +163,9 @@ func view(m Model) string {
 		return s.String()
 	}
 
-	s.WriteString(tui.RenderBorder(63))
-	s.WriteString("\n")
 	enterKey, _ := m.keyMap.GetBinding(actions.ActionContinue, actions.ScopeInit)
 	quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
-	s.WriteString(tui.RenderKeyBindings(enterKey, quitKey))
-	s.WriteString("\n")
+	s.WriteString(tui.RenderKeyBindingsWithBorder(enterKey, quitKey))
 
 	return s.String()
 }
@@ -191,13 +188,6 @@ func renderAuthFailedView(m Model, s *strings.Builder) string {
 		s.WriteString(styles.Dim.Render("  ") + editBotLine + "\n")
 	}
 
-	// editSocketLine := "  " + m.localize("init.edit_socket_token", "Edit Socket Token")
-	// if m.authFailCursor == 1 {
-	// 	s.WriteString(styles.Highlight.Render("> ") + editSocketLine + "\n")
-	// } else {
-	// 	s.WriteString(styles.Dim.Render("  ") + editSocketLine + "\n")
-	// }
-
 	retryLine := "  " + m.localize("init.retry_connection", "Retry Connection")
 	if m.authFailCursor == 2 {
 		s.WriteString(styles.Highlight.Render("> ") + retryLine + "\n")
@@ -210,8 +200,7 @@ func renderAuthFailedView(m Model, s *strings.Builder) string {
 	downKey, _ := m.keyMap.GetBinding(actions.ActionDown, actions.ScopeInit)
 	enterKey, _ := m.keyMap.GetBinding(actions.ActionContinue, actions.ScopeInit)
 	quitKey, _ := m.keyMap.GetBinding(actions.ActionQuit, actions.ScopeInit)
-	s.WriteString(tui.RenderKeyBindings(upKey, downKey, enterKey, quitKey))
-	s.WriteString("\n")
+	s.WriteString(tui.RenderKeyBindingsWithBorder(upKey, downKey, enterKey, quitKey))
 	return s.String()
 }
 

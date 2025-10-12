@@ -29,9 +29,6 @@ other = "  • Bot Token: OAuth & Permissions → Bot User OAuth Token"
 [init.socket_token_help]
 other = "  • Socket Token: Socket Mode → App-Level Token"
 
-[init.welcome_prompt]
-other = "Press enter to continue"
-
 [init.bot_token_label]
 other = "Bot Token"
 
