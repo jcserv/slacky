@@ -17,7 +17,7 @@ func TestNewClient(t *testing.T) {
 	botToken := "xoxb-test-token"
 	socketToken := "xapp-test-token"
 
-	client := slack.New(botToken, socketToken)
+	client := slack.NewWithSocketMode(botToken, socketToken)
 
 	assert.NotNil(t, client)
 	assert.NotNil(t, client.API())

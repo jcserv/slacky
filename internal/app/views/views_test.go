@@ -82,8 +82,9 @@ func TestChatModelView(t *testing.T) {
 		t.Error("View should not return empty string")
 	}
 
-	if !strings.Contains(view, "Chat View") {
-		t.Error("View should contain 'Chat View' title")
+	// Check for sidebar component presence
+	if !strings.Contains(view, "Channels") {
+		t.Error("View should contain 'Channels' sidebar")
 	}
 }
 

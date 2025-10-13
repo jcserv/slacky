@@ -157,7 +157,34 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.userView.SetUserInfo(msg.userName, msg.teamName)
 		m.statusBar.SetConnected(true)
 
+		// Load channels after successful auth
+		return m, loadChannels(m.app.SlackClient)
+
+	case channelsLoadedMsg:
+		// Set channels in the chat view
+		m.chatView.SetChannels(msg.channels)
 		return m, nil
+
+	case messagesLoadedMsg:
+		// Set messages in the chat view
+		m.chatView.SetMessages(msg.messages)
+		return m, nil
+
+	case messageSentMsg:
+		// Reload messages for the channel after sending
+		selectedCh := m.chatView.GetSelectedChannel()
+		if selectedCh != nil && selectedCh.ID == msg.channelID {
+			return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
+		}
+		return m, nil
+
+	case views.SendChatMessageMsg:
+		// Handle message send request from chat view
+		return m, sendMessage(m.app.SlackClient, msg.ChannelID, msg.Text)
+
+	case views.LoadChannelMessagesMsg:
+		// Load messages for the selected channel
+		return m, loadMessages(m.app.SlackClient, msg.ChannelID, 100)
 
 	case statusbar.TickMsg:
 		// Update status bar with tick

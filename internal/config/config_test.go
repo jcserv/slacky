@@ -33,7 +33,16 @@ func TestValidate(t *testing.T) {
 		errorMsg  string
 	}{
 		{
-			name: "Valid config",
+			name: "Valid user token config",
+			cfg: &config.Config{
+				Workspace: config.Workspace{
+					UserToken: "xoxp-test-token",
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "Valid legacy bot token config",
 			cfg: &config.Config{
 				Workspace: config.Workspace{
 					BotToken:    "xoxb-test-token",
@@ -43,32 +52,32 @@ func TestValidate(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name: "Missing bot token",
+			name: "Missing bot token (only socket token)",
 			cfg: &config.Config{
 				Workspace: config.Workspace{
 					SocketToken: "xapp-test-token",
 				},
 			},
 			wantError: true,
-			errorMsg:  "bot_token is required",
+			errorMsg:  "user_token is required",
 		},
 		{
-			name: "Missing socket token",
+			name: "Missing socket token (only bot token)",
 			cfg: &config.Config{
 				Workspace: config.Workspace{
 					BotToken: "xoxb-test-token",
 				},
 			},
 			wantError: true,
-			errorMsg:  "socket_token is required",
+			errorMsg:  "user_token is required",
 		},
 		{
-			name: "Missing both tokens",
+			name: "Missing all tokens",
 			cfg: &config.Config{
 				Workspace: config.Workspace{},
 			},
 			wantError: true,
-			errorMsg:  "bot_token is required",
+			errorMsg:  "user_token is required",
 		},
 	}
 

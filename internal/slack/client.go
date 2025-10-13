@@ -8,14 +8,25 @@ import (
 	"github.com/slack-go/slack/socketmode"
 )
 
-// Client wraps the Slack API client and Socket Mode client
+// Client wraps the Slack API client
 type Client struct {
 	api    *slack.Client
-	socket *socketmode.Client
+	socket *socketmode.Client // Optional, only for bot mode
 }
 
-// New creates a new Slack client with the provided tokens
-func New(botToken, appToken string) *Client {
+// New creates a new Slack client with a user token
+func New(userToken string) *Client {
+	api := slack.New(userToken)
+
+	return &Client{
+		api:    api,
+		socket: nil, // User tokens don't use Socket Mode
+	}
+}
+
+// NewWithSocketMode creates a new Slack client with Socket Mode (for bot tokens)
+// Deprecated: Use New() with user tokens instead
+func NewWithSocketMode(botToken, appToken string) *Client {
 	api := slack.New(
 		botToken,
 		slack.OptionAppLevelToken(appToken),
@@ -91,13 +102,26 @@ func (c *Client) SendMessage(ctx context.Context, channelID, text string) error 
 }
 
 // Run starts the Socket Mode client and processes events
+// Only works if client was created with NewWithSocketMode
 func (c *Client) Run(ctx context.Context) error {
+	if c.socket == nil {
+		return fmt.Errorf("Socket Mode not available (client created with user token)")
+	}
 	return c.socket.RunContext(ctx)
 }
 
 // Events returns the channel for receiving Socket Mode events
+// Only works if client was created with NewWithSocketMode
 func (c *Client) Events() chan socketmode.Event {
+	if c.socket == nil {
+		return nil
+	}
 	return c.socket.Events
+}
+
+// HasSocketMode returns true if this client has Socket Mode enabled
+func (c *Client) HasSocketMode() bool {
+	return c.socket != nil
 }
 
 // API returns the underlying Slack API client
@@ -108,4 +132,13 @@ func (c *Client) API() *slack.Client {
 // Socket returns the underlying Socket Mode client
 func (c *Client) Socket() *socketmode.Client {
 	return c.socket
+}
+
+// GetUserInfo retrieves information about a user
+func (c *Client) GetUserInfo(ctx context.Context, userID string) (*slack.User, error) {
+	user, err := c.api.GetUserInfoContext(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info for %s: %w", userID, err)
+	}
+	return user, nil
 }

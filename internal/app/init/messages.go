@@ -32,10 +32,11 @@ type (
 )
 
 // testBotToken tests bot token authentication with Slack
+// Deprecated: Will be replaced with OAuth flow
 func testBotToken(botToken string) tea.Cmd {
 	return func() tea.Msg {
 		// Use a dummy socket token for client creation (not used in auth test)
-		client := slack.New(botToken, "dummy-socket-token")
+		client := slack.NewWithSocketMode(botToken, "dummy-socket-token")
 
 		ctx := context.Background()
 		authResp, err := client.TestAuth(ctx)
@@ -50,9 +51,10 @@ func testBotToken(botToken string) tea.Cmd {
 }
 
 // testAuth tests authentication with Slack
+// Deprecated: Will be replaced with OAuth flow
 func testAuth(botToken, socketToken string) tea.Cmd {
 	return func() tea.Msg {
-		client := slack.New(botToken, socketToken)
+		client := slack.NewWithSocketMode(botToken, socketToken)
 
 		ctx := context.Background()
 		authResp, err := client.TestAuth(ctx)

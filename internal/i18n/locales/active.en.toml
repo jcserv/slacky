@@ -362,3 +362,37 @@ other = "Connected"
 
 [statusbar.disconnected]
 other = "Disconnected"
+
+# Chat View
+[chat.sidebar_title]
+other = "Channels"
+
+[chat.select_channel]
+other = "Select a channel"
+
+[chat.no_messages]
+other = "No messages yet. Start the conversation!"
+
+[chat.loading_channels]
+other = "Loading channels..."
+
+[chat.loading_messages]
+other = "Loading messages..."
+
+[chat.message_placeholder]
+other = "Type a message..."
+
+[chat.message_input_help]
+other = "Press Enter to send, Alt+Enter for newline, Tab to switch focus"
+
+[chat.edited]
+other = "edited"
+
+[chat.no_content]
+other = "no content"
+
+[chat.unknown_user]
+other = "Unknown"
+
+[chat.system_channel]
+other = "system"

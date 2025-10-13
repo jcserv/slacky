@@ -21,7 +21,16 @@ type App struct {
 // New creates a new application instance
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	// Create Slack client
-	client := slack.New(cfg.Workspace.BotToken, cfg.Workspace.SocketToken)
+	var client *slack.Client
+	if cfg.Workspace.UserToken != "" {
+		// New format: user token
+		client = slack.New(cfg.Workspace.UserToken)
+	} else if cfg.Workspace.BotToken != "" && cfg.Workspace.SocketToken != "" {
+		// Legacy format: bot + socket tokens
+		client = slack.NewWithSocketMode(cfg.Workspace.BotToken, cfg.Workspace.SocketToken)
+	} else {
+		return nil, fmt.Errorf("no valid Slack credentials found in config")
+	}
 
 	app := &App{
 		config:       cfg,

@@ -347,9 +347,9 @@ func TestTUIModelViewStates(t *testing.T) {
 			t.Error("View should contain Chat tab")
 		}
 
-		// Should contain active view content
-		if !strings.Contains(view, "Chat View") {
-			t.Error("View should contain chat view content")
+		// Should contain active view content (sidebar shows "Channels")
+		if !strings.Contains(view, "Channels") {
+			t.Error("View should contain chat view content (Channels sidebar)")
 		}
 
 		// Should contain status bar
@@ -381,8 +381,8 @@ func TestTUIModelViewSwitching(t *testing.T) {
 
 		view := m.View()
 
-		if !strings.Contains(view, "Chat View") {
-			t.Error("Should display chat view content")
+		if !strings.Contains(view, "Channels") {
+			t.Error("Should display chat view content (Channels sidebar)")
 		}
 	})
 
