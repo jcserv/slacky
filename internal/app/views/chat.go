@@ -183,8 +183,10 @@ func (m ChatModel) View() string {
 	actualSidebarWidth := lipgloss.Width(sidebarView)
 
 	// Calculate box dimensions using actual sidebar width
-	boxOuterWidth := m.width - actualSidebarWidth
-	contentWidth := boxOuterWidth - 2 // Inner width (subtract borders)
+	// The remaining width after sidebar is the total space for the content box (including borders)
+	remainingWidth := m.width - actualSidebarWidth
+	// contentWidth is the inner width (Box.Width sets inner content width in lipgloss)
+	contentWidth := remainingWidth - 2
 
 	// Create divider between messages and input
 	dividerLine := ""
@@ -215,9 +217,8 @@ func (m ChatModel) View() string {
 
 	// Wrap content in a bordered box that matches sidebar height
 	contentView := styles.Box.
-		Width(boxOuterWidth).    // Outer width including borders
-		MaxWidth(boxOuterWidth). // Enforce maximum width
-		Height(m.height).        // Match sidebar height
+		Width(contentWidth). // Inner content width (borders are added by lipgloss)
+		Height(m.height).    // Match sidebar height
 		Render(messagesAndInput)
 
 	// Combine sidebar and content horizontally

@@ -58,8 +58,8 @@ func NewModel() Model {
 
 	// Create custom list delegate for styling
 	delegate := list.NewDefaultDelegate()
-	delegate.ShowDescription = true
-	delegate.SetHeight(2)
+	delegate.ShowDescription = false
+	delegate.SetHeight(1)
 	delegate.SetSpacing(0)
 
 	// Style the list items
