@@ -92,8 +92,12 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tabs.SetWidth(msg.Width)
 		m.statusBar.SetWidth(msg.Width)
 
-		// Calculate content height (total - tabs - status bar - borders)
-		contentHeight := msg.Height - 4 // Reserve space for tabs and status bar
+		// Calculate content height (total - tabs - status bar - borders - newlines)
+		// Tabs: 2 lines (content + bottom border)
+		// Status bar: 2 lines (top border + content)
+		// Newlines: 2 lines (after tabs, before status bar)
+		// Total: 6 lines
+		contentHeight := msg.Height - 6
 
 		m.chatView.SetSize(msg.Width, contentHeight)
 		m.activityView.SetSize(msg.Width, contentHeight)

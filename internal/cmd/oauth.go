@@ -29,10 +29,6 @@ https://api.slack.com/apps`,
 	RunE: runOAuth,
 }
 
-func init() {
-	rootCmd.AddCommand(oauthCmd)
-}
-
 func runOAuth(cmd *cobra.Command, args []string) error {
 	// Run the OAuth wizard
 	result, err := oauthWizard.RunWithVersion(version.Version)

@@ -91,7 +91,7 @@ func (m Model) renderHeader() string {
 	channelDisplay := styles.Title.Render(m.channelName)
 
 	return lipgloss.NewStyle().
-		Width(m.width - 2).
+		Width(m.width-2).
 		Padding(0, 1).
 		Render(channelDisplay)
 }
@@ -107,7 +107,7 @@ func (m *Model) SetSize(width, height int) {
 		viewportHeight = 1
 	}
 
-	m.viewport.Width = width - 2  // Account for padding
+	m.viewport.Width = width - 2 // Account for padding
 	m.viewport.Height = viewportHeight
 }
 
