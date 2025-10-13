@@ -24,25 +24,6 @@ func New(userToken string) *Client {
 	}
 }
 
-// NewWithSocketMode creates a new Slack client with Socket Mode (for bot tokens)
-// Deprecated: Use New() with user tokens instead
-func NewWithSocketMode(botToken, appToken string) *Client {
-	api := slack.New(
-		botToken,
-		slack.OptionAppLevelToken(appToken),
-	)
-
-	socket := socketmode.New(
-		api,
-		socketmode.OptionDebug(false),
-	)
-
-	return &Client{
-		api:    api,
-		socket: socket,
-	}
-}
-
 // TestAuth tests the connection and returns auth info
 func (c *Client) TestAuth(ctx context.Context) (*slack.AuthTestResponse, error) {
 	resp, err := c.api.AuthTestContext(ctx)

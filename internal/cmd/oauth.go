@@ -64,10 +64,6 @@ func runOAuth(cmd *cobra.Command, args []string) error {
 	cfg.Workspace.TeamID = tokenResp.Team.ID
 	cfg.Workspace.UserID = tokenResp.AuthedUser.ID
 
-	// Clear legacy tokens if present
-	cfg.Workspace.BotToken = ""
-	cfg.Workspace.SocketToken = ""
-
 	if err := config.Save(cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}

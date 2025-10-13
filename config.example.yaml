@@ -1,11 +1,5 @@
 workspace:
-  # Your Slack Bot User OAuth Token (starts with xoxb-)
-  # Get this from: https://api.slack.com/apps → Your App → Install App
-  bot_token: "xoxb-your-bot-token-here"
-
-  # Your Slack App-Level Token for Socket Mode (starts with xapp-)
-  # Get this from: https://api.slack.com/apps → Your App → Socket Mode
-  socket_token: "xapp-your-socket-token-here"
+  user_token: "xoxb-your-user-token-here"
 
 ui:
   # Theme: default, dark, or light
@@ -13,7 +7,6 @@ ui:
 
   # Show timestamps on messages
   show_timestamps: true
-
 # Keybindings (optional)
 # Override default keybindings by specifying custom key mappings
 # Use {mod} for OS-specific modifier (Cmd on macOS, Ctrl on Windows/Linux)

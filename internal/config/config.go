@@ -23,14 +23,10 @@ type Config struct {
 
 // Workspace contains Slack workspace credentials
 type Workspace struct {
-	UserToken  string `yaml:"user_token"`
-	TeamName   string `yaml:"team_name,omitempty"`
-	TeamID     string `yaml:"team_id,omitempty"`
-	UserID     string `yaml:"user_id,omitempty"`
-
-	// Legacy fields (deprecated)
-	BotToken    string `yaml:"bot_token,omitempty"`
-	SocketToken string `yaml:"socket_token,omitempty"`
+	UserToken string `yaml:"user_token"`
+	TeamName  string `yaml:"team_name,omitempty"`
+	TeamID    string `yaml:"team_id,omitempty"`
+	UserID    string `yaml:"user_id,omitempty"`
 }
 
 // UI contains UI preferences
@@ -129,15 +125,9 @@ func Save(cfg *Config) error {
 
 // Validate checks if the config has required fields
 func (c *Config) Validate() error {
-	// Check for user token (new format)
 	if c.Workspace.UserToken != "" {
 		return nil
 	}
 
-	// Fallback to legacy bot token format
-	if c.Workspace.BotToken != "" && c.Workspace.SocketToken != "" {
-		return nil
-	}
-
-	return errors.New("user_token is required (or legacy bot_token and socket_token)")
+	return errors.New("user_token is required")
 }

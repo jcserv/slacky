@@ -44,8 +44,6 @@ func checkAuth(cfg *config.Config) tea.Cmd {
 		var client *slackClient.Client
 		if cfg.Workspace.UserToken != "" {
 			client = slackClient.New(cfg.Workspace.UserToken)
-		} else {
-			client = slackClient.NewWithSocketMode(cfg.Workspace.BotToken, cfg.Workspace.SocketToken)
 		}
 
 		ctx := context.Background()

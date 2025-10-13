@@ -24,8 +24,7 @@ func init() {
 func TestNewTUI(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -62,8 +61,7 @@ func TestNewTUI(t *testing.T) {
 func TestHelpToggle(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -100,8 +98,7 @@ func TestHelpToggle(t *testing.T) {
 func TestTUIModelInit(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -118,8 +115,7 @@ func TestTUIModelInit(t *testing.T) {
 func TestTUIModelUpdateWindowSize(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -144,8 +140,7 @@ func TestTUIModelUpdateWindowSize(t *testing.T) {
 func TestTUIModelUpdateQuit(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -169,8 +164,7 @@ func TestTUIModelUpdateQuit(t *testing.T) {
 func TestTUIModelUpdateTabNavigation(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -218,8 +212,7 @@ func TestTUIModelUpdateTabNavigation(t *testing.T) {
 func TestTUIModelUpdateTabNavigationWithoutAuth(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -243,8 +236,7 @@ func TestTUIModelUpdateTabNavigationWithoutAuth(t *testing.T) {
 func TestTUIModelUpdateAuthSuccess(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -275,8 +267,7 @@ func TestTUIModelUpdateAuthSuccess(t *testing.T) {
 func TestTUIModelUpdateError(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -295,8 +286,7 @@ func TestTUIModelUpdateError(t *testing.T) {
 func TestTUIModelViewStates(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -362,8 +352,7 @@ func TestTUIModelViewStates(t *testing.T) {
 func TestTUIModelViewSwitching(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 
@@ -413,8 +402,7 @@ func TestTUIModelViewSwitching(t *testing.T) {
 func TestTUIKeyBindings(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test",
-			SocketToken: "xapp-test",
+			UserToken: "xoxb-test",
 		},
 	}
 

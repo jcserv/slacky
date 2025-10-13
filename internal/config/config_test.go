@@ -19,8 +19,7 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg)
 	assert.Equal(t, "default", cfg.UI.Theme)
 	assert.True(t, cfg.UI.ShowTimestamps)
-	assert.Empty(t, cfg.Workspace.BotToken, "default config should have empty tokens")
-	assert.Empty(t, cfg.Workspace.SocketToken, "default config should have empty tokens")
+	assert.Empty(t, cfg.Workspace.UserToken, "default config should have empty tokens")
 }
 
 func TestValidate(t *testing.T) {
@@ -40,36 +39,6 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			wantError: false,
-		},
-		{
-			name: "Valid legacy bot token config",
-			cfg: &config.Config{
-				Workspace: config.Workspace{
-					BotToken:    "xoxb-test-token",
-					SocketToken: "xapp-test-token",
-				},
-			},
-			wantError: false,
-		},
-		{
-			name: "Missing bot token (only socket token)",
-			cfg: &config.Config{
-				Workspace: config.Workspace{
-					SocketToken: "xapp-test-token",
-				},
-			},
-			wantError: true,
-			errorMsg:  "user_token is required",
-		},
-		{
-			name: "Missing socket token (only bot token)",
-			cfg: &config.Config{
-				Workspace: config.Workspace{
-					BotToken: "xoxb-test-token",
-				},
-			},
-			wantError: true,
-			errorMsg:  "user_token is required",
 		},
 		{
 			name: "Missing all tokens",
@@ -122,8 +91,7 @@ func TestSaveAndLoad(t *testing.T) {
 
 		// Manually marshal YAML for testing
 		yamlContent := `workspace:
-  bot_token: xoxb-test-token
-  socket_token: xapp-test-token
+  user_token: xoxb-test-token
 ui:
   theme: dark
   show_timestamps: false
@@ -146,8 +114,7 @@ ui:
 		err = yaml.Unmarshal(data, &cfg)
 		require.NoError(t, err)
 
-		assert.Equal(t, "xoxb-test-token", cfg.Workspace.BotToken)
-		assert.Equal(t, "xapp-test-token", cfg.Workspace.SocketToken)
+		assert.Equal(t, "xoxb-test-token", cfg.Workspace.UserToken)
 		assert.Equal(t, "dark", cfg.UI.Theme)
 		assert.False(t, cfg.UI.ShowTimestamps)
 	})
@@ -180,7 +147,7 @@ func TestLoad_InvalidYAML(t *testing.T) {
 	configPath := filepath.Join(tempDir, "config.yaml")
 	invalidYAML := `
 workspace:
-  bot_token: "test
+  user_token: "test
   socket_token: unclosed quote
 ui:
   theme: [invalid
@@ -209,8 +176,7 @@ func TestSave_CreatesDirectory(t *testing.T) {
 
 	cfg := &config.Config{
 		Workspace: config.Workspace{
-			BotToken:    "xoxb-test-token",
-			SocketToken: "xapp-test-token",
+			UserToken: "xoxb-test-token",
 		},
 	}
 

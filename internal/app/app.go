@@ -22,15 +22,10 @@ type App struct {
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	// Create Slack client
 	var client *slack.Client
-	if cfg.Workspace.UserToken != "" {
-		// New format: user token
-		client = slack.New(cfg.Workspace.UserToken)
-	} else if cfg.Workspace.BotToken != "" && cfg.Workspace.SocketToken != "" {
-		// Legacy format: bot + socket tokens
-		client = slack.NewWithSocketMode(cfg.Workspace.BotToken, cfg.Workspace.SocketToken)
-	} else {
-		return nil, fmt.Errorf("no valid Slack credentials found in config")
+	if cfg.Workspace.UserToken == "" {
+		return nil, fmt.Errorf("user_token is required")
 	}
+	client = slack.New(cfg.Workspace.UserToken)
 
 	app := &App{
 		config:       cfg,

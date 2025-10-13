@@ -55,7 +55,7 @@ func TempConfigDir(t *testing.T) (string, func()) {
 //
 // Usage:
 //
-//	configPath, cleanup := testutil.WriteTestConfig(t, "bot_token: xoxb-test\nsocket_token: xapp-test")
+//	configPath, cleanup := testutil.WriteTestConfig(t, "user_token: xoxb-test")
 //	defer cleanup()
 func WriteTestConfig(t *testing.T, content string) (string, func()) {
 	t.Helper()

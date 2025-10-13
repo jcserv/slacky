@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jcserv/slacky/internal/app"
-	_init "github.com/jcserv/slacky/internal/app/init"
+	oauthWizard "github.com/jcserv/slacky/internal/app/oauth"
 	"github.com/jcserv/slacky/internal/config"
 	"github.com/jcserv/slacky/internal/version"
 	"github.com/spf13/cobra"
@@ -17,7 +17,7 @@ func init() {
 	rootCmd.Flags().BoolP("version", "v", false, "Version")
 
 	rootCmd.AddCommand(
-		initCmd,
+		oauthCmd,
 		versionCmd,
 	)
 }
@@ -31,8 +31,8 @@ for managing Slack workspaces, channels, and messages directly from your termina
 # Start the Slack client
 slacky
 
-# Run setup wizard
-slacky init
+# Authenticate with OAuth
+slacky oauth
 
 # Show version
 slacky version
@@ -70,25 +70,33 @@ func setupApp(cmd *cobra.Command) (*app.App, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		if err == config.ErrConfigNotFound {
-			// Auto-run init wizard if config is missing
-			fmt.Println("No configuration found. Let's set up Slacky!")
+			// Auto-run OAuth wizard if config is missing
+			fmt.Println("No configuration found. Let's set up Slacky with OAuth!")
 			fmt.Println()
 
-			// Run init wizard
-			result, err := _init.InitWithVersion(version.Version)
+			// Run OAuth wizard
+			result, err := oauthWizard.RunWithVersion(version.Version)
 			if err != nil {
-				return nil, fmt.Errorf("init failed: %w", err)
+				return nil, fmt.Errorf("oauth setup failed: %w", err)
 			}
 
-			// If init completed successfully, load the new config
-			if result.ShouldContinue {
-				cfg, err = config.Load()
-				if err != nil {
-					return nil, fmt.Errorf("failed to load config after init: %w", err)
-				}
-			} else {
-				// User cancelled init
+			// If user cancelled, exit gracefully
+			if !result.ShouldContinue || result.TokenResponse == nil {
+				fmt.Println("OAuth setup cancelled.")
 				os.Exit(0)
+			}
+
+			// Create config with OAuth token
+			cfg = config.DefaultConfig()
+			tokenResp := result.TokenResponse
+			cfg.Workspace.UserToken = tokenResp.AccessToken
+			cfg.Workspace.TeamName = tokenResp.Team.Name
+			cfg.Workspace.TeamID = tokenResp.Team.ID
+			cfg.Workspace.UserID = tokenResp.AuthedUser.ID
+
+			// Save the config
+			if err := config.Save(cfg); err != nil {
+				return nil, fmt.Errorf("failed to save config: %w", err)
 			}
 		} else {
 			return nil, fmt.Errorf("failed to load config: %w", err)

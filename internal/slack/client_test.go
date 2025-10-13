@@ -14,14 +14,11 @@ import (
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
-	botToken := "xoxb-test-token"
-	socketToken := "xapp-test-token"
-
-	client := slack.NewWithSocketMode(botToken, socketToken)
+	userToken := "xoxb-test-token"
+	client := slack.New(userToken)
 
 	assert.NotNil(t, client)
 	assert.NotNil(t, client.API())
-	assert.NotNil(t, client.Socket())
 }
 
 func TestMockClient_TestAuth_Success(t *testing.T) {
