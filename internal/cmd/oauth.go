@@ -8,8 +8,11 @@ import (
 
 	"github.com/jcserv/slacky/internal/config"
 	"github.com/jcserv/slacky/internal/oauth"
+	"github.com/jcserv/slacky/internal/tui/components"
 	"github.com/jcserv/slacky/internal/tui/styles"
+	"github.com/jcserv/slacky/internal/version"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // oauthCmd represents the oauth command
@@ -37,7 +40,40 @@ func init() {
 }
 
 func runOAuth(cmd *cobra.Command, args []string) error {
-	fmt.Println(styles.Title.Render("🔐 Slacky OAuth Authentication"))
+	// Get terminal width for logo rendering
+	width, _, err := term.GetSize(0)
+	if err != nil {
+		width = 80
+	}
+
+	// Render logo with version
+	var logoRendered string
+	if width < components.MinWidth() {
+		logoRendered = components.SmallRender(version.Version, width)
+	} else {
+		logoRendered = components.Render(components.Opts{
+			Version:      version.Version,
+			Width:        width,
+			FillColor:    styles.ColourDim,
+			VersionColor: styles.Tertiary,
+		})
+	}
+
+	// Display logo
+	fmt.Println()
+	fmt.Println(logoRendered)
+	fmt.Println()
+
+	// Display title and subtitle
+	fmt.Println(styles.Title.Render("Thanks for trying out Slacky!"))
+	fmt.Println(styles.Subtitle.Render("Let's set up your Slack workspace connection"))
+	fmt.Println()
+
+	// Display OAuth instructions
+	fmt.Println(styles.Highlight.Render("🔐 OAuth Setup"))
+	fmt.Println(styles.Subtitle.Render("  • Set SLACK_CLIENT_ID environment variable"))
+	fmt.Println(styles.Subtitle.Render("  • Set SLACK_CLIENT_SECRET environment variable"))
+	fmt.Println(styles.Subtitle.Render("  • Find these at https://api.slack.com/apps → Basic Information"))
 	fmt.Println()
 
 	// Load OAuth config from environment
@@ -45,12 +81,7 @@ func runOAuth(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		fmt.Println(styles.Error.Render("✗ Missing OAuth credentials"))
 		fmt.Println()
-		fmt.Println("Please set the following environment variables:")
-		fmt.Println(styles.Label.Render("  SLACK_CLIENT_ID") + "     - Your Slack app's Client ID")
-		fmt.Println(styles.Label.Render("  SLACK_CLIENT_SECRET") + " - Your Slack app's Client Secret")
-		fmt.Println()
-		fmt.Println("Find these in your Slack app's " + styles.Label.Render("Basic Information") + " page:")
-		fmt.Println("  https://api.slack.com/apps")
+		fmt.Println("Please set the required environment variables listed above.")
 		fmt.Println()
 		return err
 	}
@@ -77,7 +108,7 @@ func runOAuth(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run OAuth flow
-	fmt.Println(styles.Subtitle.Render("Starting OAuth flow..."))
+	fmt.Println(styles.Label.Render("Starting OAuth flow..."))
 	fmt.Println()
 
 	ctx := context.Background()
@@ -88,16 +119,16 @@ func runOAuth(cmd *cobra.Command, args []string) error {
 		Port:         8080, // Fixed port for Slack redirect URI
 		Timeout:      5 * time.Minute,
 		OnURL: func(authURL string) error {
-			fmt.Println(styles.Info.Render("→ Opening browser for authorization..."))
+			fmt.Println(styles.Subtitle.Render("→ Opening browser for authorization..."))
 			fmt.Println()
-			fmt.Println("If your browser doesn't open automatically, visit:")
+			fmt.Println(styles.Dim.Render("If your browser doesn't open automatically, visit:"))
 			fmt.Println(styles.Dim.Render("  " + authURL))
 			fmt.Println()
 
 			// Try to open browser
 			if err := oauth.OpenBrowser(authURL); err != nil {
 				fmt.Println(styles.Warning.Render("⚠ Failed to open browser automatically"))
-				fmt.Println("Please open the URL above manually.")
+				fmt.Println(styles.Dim.Render("Please open the URL above manually."))
 			}
 
 			return nil
@@ -112,10 +143,11 @@ func runOAuth(cmd *cobra.Command, args []string) error {
 	}
 
 	// Save config
+	fmt.Println()
 	fmt.Println(styles.Success.Render("✓ Successfully authenticated!"))
 	fmt.Println()
-	fmt.Println(styles.Label.Render("Team:") + " " + tokenResp.Team.Name)
-	fmt.Println(styles.Label.Render("User:") + " " + tokenResp.AuthedUser.ID)
+	fmt.Println(styles.Label.Render("  Team:") + " " + tokenResp.Team.Name)
+	fmt.Println(styles.Label.Render("  User:") + " " + tokenResp.AuthedUser.ID)
 	fmt.Println()
 
 	// Load or create config
@@ -143,10 +175,10 @@ func runOAuth(cmd *cobra.Command, args []string) error {
 	}
 
 	configPath, _ := config.ConfigPath()
-	fmt.Println(styles.Success.Render("✓ Configuration saved"))
+	fmt.Println(styles.Success.Render("✓ Configuration saved to:"))
 	fmt.Println(styles.Dim.Render("  " + configPath))
 	fmt.Println()
-	fmt.Println(styles.Info.Render("You can now run") + " " + styles.Label.Bold(true).Render("slacky") + " " + styles.Info.Render("to start the app!"))
+	fmt.Println(styles.Subtitle.Render("You can now run ") + styles.Label.Bold(true).Render("slacky") + styles.Subtitle.Render(" to start the app!"))
 	fmt.Println()
 
 	return nil
