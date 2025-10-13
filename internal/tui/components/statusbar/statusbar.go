@@ -20,6 +20,7 @@ type Model struct {
 	currentTime    time.Time
 	currentChannel string
 	isConnected    bool
+	helpText       string // Help keybindings to display in second column
 	localizer      *i18n.Localizer
 }
 
@@ -98,6 +99,12 @@ func (m *Model) SetConnected(connected bool) {
 	m.updateContent()
 }
 
+// SetHelpText sets the help text to display in the second column
+func (m *Model) SetHelpText(helpText string) {
+	m.helpText = helpText
+	m.updateContent()
+}
+
 // updateContent updates the statusbar content based on current state
 func (m *Model) updateContent() {
 	// First column: channel
@@ -108,8 +115,8 @@ func (m *Model) updateContent() {
 		firstCol = m.localize("statusbar.no_channel", "No channel")
 	}
 
-	// Second column: empty for now
-	secondCol := ""
+	// Second column: help keybindings (if set)
+	secondCol := m.helpText
 
 	// Third column: connection status
 	var thirdCol string

@@ -225,12 +225,10 @@ func (s *ScopedKeyMap) GetBinding(action actions.Action, scope actions.ActionSco
 func (s *ScopedKeyMap) GetAllBindingsForScope(scope actions.ActionScope) []key.Binding {
 	bindings := []key.Binding{}
 
-	// Add global bindings first
 	for _, binding := range s.Global {
 		bindings = append(bindings, binding)
 	}
 
-	// Add scope-specific bindings
 	var scopeMap ActionKeyMap
 	switch scope {
 	case actions.ScopeChat:
@@ -245,8 +243,46 @@ func (s *ScopedKeyMap) GetAllBindingsForScope(scope actions.ActionScope) []key.B
 		scopeMap = s.Activity
 	}
 
-	if scopeMap != nil {
-		for _, binding := range scopeMap {
+	for _, binding := range scopeMap {
+		bindings = append(bindings, binding)
+	}
+
+	return bindings
+}
+
+// GetEssentialBindings returns only the most important keybindings to show in help
+// This prevents help text from being overwhelming with too many keybindings
+func (s *ScopedKeyMap) GetEssentialBindings(scope actions.ActionScope) []key.Binding {
+	// Essential actions that should always be shown
+	essentialGlobal := []actions.Action{
+		actions.ActionQuit,
+		actions.ActionToggleHelp,
+		actions.ActionNextTab,
+		actions.ActionPrevTab,
+	}
+
+	// Add scope-specific essential actions
+	var essentialActions []actions.Action
+	switch scope {
+	case actions.ScopeChat:
+		essentialActions = []actions.Action{
+			actions.ActionQuit,
+			actions.ActionToggleHelp,
+			actions.ActionNextTab,
+			actions.ActionSearch,
+		}
+	case actions.ScopeActivity:
+		essentialActions = essentialGlobal
+	case actions.ScopeUser:
+		essentialActions = append(essentialGlobal, actions.ActionSetStatus)
+	default:
+		essentialActions = essentialGlobal
+	}
+
+	// Collect bindings for essential actions
+	bindings := []key.Binding{}
+	for _, action := range essentialActions {
+		if binding, ok := s.GetBinding(action, scope); ok {
 			bindings = append(bindings, binding)
 		}
 	}

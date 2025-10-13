@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -47,9 +48,52 @@ func TestNewTUI(t *testing.T) {
 		t.Error("Expected localizer to be initialized")
 	}
 
+	// Check that showHelp is initialized to true (default for new users)
+	if !m.showHelp {
+		t.Error("Expected showHelp to be true initially (default for new users)")
+	}
+
 	// Check that components are initialized
 	if m.tabs.GetCurrentTab() != tabs.ChatTab {
 		t.Error("Expected tabs to be initialized with ChatTab")
+	}
+}
+
+func TestHelpToggle(t *testing.T) {
+	cfg := &config.Config{
+		Workspace: config.Workspace{
+			BotToken:    "xoxb-test",
+			SocketToken: "xapp-test",
+		},
+	}
+
+	app, err := New(context.TODO(), cfg)
+	if err != nil {
+		t.Fatalf("Failed to create app: %v", err)
+	}
+
+	m := app.NewTUI()
+
+	// Initially help should be visible (default for new users)
+	if !m.showHelp {
+		t.Error("Expected help to be visible initially (default for new users)")
+	}
+
+	// Simulate help toggle key press
+	helpKey := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}}
+	updated, _ := m.Update(helpKey)
+
+	// Help should now be hidden
+	if updated.(TUIModel).showHelp {
+		t.Error("Expected help to be hidden after toggle")
+	}
+
+	// Toggle again to show
+	updated, _ = updated.(TUIModel).Update(helpKey)
+
+	// Help should be visible again
+	if !updated.(TUIModel).showHelp {
+		t.Error("Expected help to be visible after second toggle")
 	}
 }
 

@@ -38,6 +38,7 @@ type TUIModel struct {
 	teamName     string
 	userName     string
 	localizer    *i18n.Localizer
+	showHelp     bool
 }
 
 // NewTUI creates a new TUI model with the given app
@@ -69,6 +70,7 @@ func (app *App) NewTUI() TUIModel {
 		userView:     views.NewUserModel(),
 		version:      "v0.1.0-dev", // TODO: Get from build info
 		localizer:    localizer,
+		showHelp:     true, // Show help by default for new users
 	}
 }
 
@@ -104,6 +106,12 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.keyMap.MatchesAction(msg, actions.ActionQuit, actions.ScopeGlobal) {
 			m.quitting = true
 			return m, tea.Quit
+		}
+
+		// Handle help toggle (always available)
+		if m.keyMap.MatchesAction(msg, actions.ActionToggleHelp, actions.ScopeGlobal) {
+			m.showHelp = !m.showHelp
+			return m, nil
 		}
 
 		// Only handle other actions after auth success
@@ -254,6 +262,28 @@ func (m TUIModel) View() string {
 		content = m.chatView.View()
 	}
 	s.WriteString(content)
+
+	// Update status bar with help keybindings if help is enabled
+	if m.showHelp {
+		var currentScope actions.ActionScope
+		switch m.tabs.GetCurrentTab() {
+		case tabs.ChatTab:
+			currentScope = actions.ScopeChat
+		case tabs.ActivityTab:
+			currentScope = actions.ScopeActivity
+		case tabs.UserTab:
+			currentScope = actions.ScopeUser
+		default:
+			currentScope = actions.ScopeGlobal
+		}
+
+		// Get only essential bindings to avoid overwhelming help text
+		bindings := m.keyMap.GetEssentialBindings(currentScope)
+		helpText := tui.RenderKeyBindings(bindings...)
+		m.statusBar.SetHelpText(helpText)
+	} else {
+		m.statusBar.SetHelpText("")
+	}
 
 	// Render status bar at the bottom
 	s.WriteString("\n")
