@@ -430,10 +430,6 @@ func TestTUIKeyBindings(t *testing.T) {
 		if !key.Matches(tea.KeyMsg{Type: tea.KeyTab}, nextTabKey) {
 			t.Error("Tab should match NextTab binding")
 		}
-
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyRight}, nextTabKey) {
-			t.Error("Right arrow should match NextTab binding")
-		}
 	})
 
 	t.Run("Previous tab key binding", func(t *testing.T) {
@@ -444,10 +440,6 @@ func TestTUIKeyBindings(t *testing.T) {
 
 		if !key.Matches(tea.KeyMsg{Type: tea.KeyShiftTab}, prevTabKey) {
 			t.Error("Shift+Tab should match PrevTab binding")
-		}
-
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyLeft}, prevTabKey) {
-			t.Error("Left arrow should match PrevTab binding")
 		}
 	})
 

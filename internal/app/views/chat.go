@@ -7,9 +7,11 @@ import (
 
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/models"
+	"github.com/jcserv/slacky/internal/tui/actions"
 	"github.com/jcserv/slacky/internal/tui/components/input"
 	"github.com/jcserv/slacky/internal/tui/components/messages"
 	"github.com/jcserv/slacky/internal/tui/components/sidebar"
+	"github.com/jcserv/slacky/internal/tui/keys"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
@@ -47,6 +49,7 @@ type ChatModel struct {
 	width     int
 	height    int
 	localizer *i18n.Localizer
+	keyMap    *keys.ScopedKeyMap
 
 	// State
 	selectedChannel *models.Channel
@@ -84,14 +87,41 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// Handle focus switching
+		// Handle focus switching with keyMap if available
+		if m.keyMap != nil {
+			// Space key: jump to input
+			if m.keyMap.MatchesAction(msg, actions.ActionBeginInput, actions.ScopeChat) && m.focused != FocusInput {
+				m.setFocus(FocusInput)
+				return m, nil
+			}
+
+			// Arrow keys for focus cycling (when not in input mode)
+			if m.focused != FocusInput {
+				if m.keyMap.MatchesAction(msg, actions.ActionRight, actions.ScopeGlobal) {
+					m.cycleFocusForward()
+					return m, nil
+				}
+				if m.keyMap.MatchesAction(msg, actions.ActionLeft, actions.ScopeGlobal) {
+					m.cycleFocusBackward()
+					return m, nil
+				}
+			}
+		}
+
+		// Handle focus switching with hardcoded keys (fallback)
 		switch msg.String() {
+		case "esc":
+			// Escape key: return to sidebar (navigation mode)
+			if m.focused != FocusSidebar {
+				m.setFocus(FocusSidebar)
+				return m, nil
+			}
 		case "tab":
-			// Cycle focus forward: sidebar -> input -> sidebar
+			// Cycle focus forward: sidebar -> messages -> input -> sidebar
 			m.cycleFocusForward()
 			return m, nil
 		case "shift+tab":
-			// Cycle focus backward: sidebar -> input -> sidebar
+			// Cycle focus backward: sidebar -> input -> messages -> sidebar
 			m.cycleFocusBackward()
 			return m, nil
 		case "enter":
@@ -216,10 +246,17 @@ func (m ChatModel) View() string {
 	)
 
 	// Wrap content in a bordered box that matches sidebar height
-	contentView := styles.Box.
+	// Change border color based on focus
+	boxStyle := styles.Box.
 		Width(contentWidth). // Inner content width (borders are added by lipgloss)
-		Height(m.height).    // Match sidebar height
-		Render(messagesAndInput)
+		Height(m.height)     // Match sidebar height
+
+	// Highlight border when messages or input is focused
+	if m.focused == FocusMessages || m.focused == FocusInput {
+		boxStyle = boxStyle.BorderForeground(styles.ColourSuccess)
+	}
+
+	contentView := boxStyle.Render(messagesAndInput)
 
 	// Combine sidebar and content horizontally
 	fullView := lipgloss.JoinHorizontal(
@@ -247,6 +284,8 @@ func (m ChatModel) getSidebarWidth() int {
 func (m *ChatModel) cycleFocusForward() {
 	switch m.focused {
 	case FocusSidebar:
+		m.setFocus(FocusMessages)
+	case FocusMessages:
 		m.setFocus(FocusInput)
 	case FocusInput:
 		m.setFocus(FocusSidebar)
@@ -261,6 +300,8 @@ func (m *ChatModel) cycleFocusBackward() {
 	case FocusSidebar:
 		m.setFocus(FocusInput)
 	case FocusInput:
+		m.setFocus(FocusMessages)
+	case FocusMessages:
 		m.setFocus(FocusSidebar)
 	default:
 		m.setFocus(FocusSidebar)
@@ -295,6 +336,11 @@ func (m *ChatModel) AddMessage(msg models.Message) {
 // GetSelectedChannel returns the currently selected channel
 func (m ChatModel) GetSelectedChannel() *models.Channel {
 	return m.selectedChannel
+}
+
+// SetKeyMap sets the keybinding map for the chat view
+func (m *ChatModel) SetKeyMap(keyMap *keys.ScopedKeyMap) {
+	m.keyMap = keyMap
 }
 
 // localize is a helper function to localize a message by ID with an optional fallback

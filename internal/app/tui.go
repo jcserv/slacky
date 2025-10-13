@@ -59,13 +59,16 @@ func (app *App) NewTUI() TUIModel {
 		keyMap, _ = tuiKeys.LoadKeybindings(nil, localizer)
 	}
 
+	chatView := views.NewChatModel()
+	chatView.SetKeyMap(keyMap)
+
 	return TUIModel{
 		app:          app,
 		spinner:      s,
 		keyMap:       keyMap,
 		tabs:         tabs.NewModel(),
 		statusBar:    statusbar.NewModel(),
-		chatView:     views.NewChatModel(),
+		chatView:     chatView,
 		activityView: views.NewActivityModel(),
 		userView:     views.NewUserModel(),
 		version:      "v0.1.0-dev",
@@ -145,7 +148,7 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		return m, nil
+		// If we didn't handle the key, let it fall through to the active view
 
 	case errMsg:
 		m.err = msg

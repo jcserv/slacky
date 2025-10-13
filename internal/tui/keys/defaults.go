@@ -19,8 +19,8 @@ func DefaultGlobalKeybindings() []KeybindingDef {
 		{Action: actions.ActionCommandBar, Keys: []string{"{mod}+p"}},
 
 		// Tab navigation
-		{Action: actions.ActionNextTab, Keys: []string{"tab", "right"}},
-		{Action: actions.ActionPrevTab, Keys: []string{"shift+tab", "left"}},
+		{Action: actions.ActionNextTab, Keys: []string{"tab"}},
+		{Action: actions.ActionPrevTab, Keys: []string{"shift+tab"}},
 
 		// View navigation
 		{Action: actions.ActionGoToChat, Keys: []string{"1"}},
@@ -46,6 +46,9 @@ func DefaultGlobalKeybindings() []KeybindingDef {
 // DefaultChatKeybindings returns the default keybindings for chat view
 func DefaultChatKeybindings() []KeybindingDef {
 	return []KeybindingDef{
+		// Focus navigation
+		{Action: actions.ActionBeginInput, Keys: []string{" ", "space"}},
+
 		// Message actions
 		{Action: actions.ActionSendMessage, Keys: []string{"enter"}},
 		{Action: actions.ActionEditMessage, Keys: []string{"e"}},

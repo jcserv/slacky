@@ -28,6 +28,7 @@ const (
 	ActionGoToChat     Action = "go_to_chat"
 	ActionGoToActivity Action = "go_to_activity"
 	ActionGoToUser     Action = "go_to_user"
+	ActionBeginInput   Action = "begin_input" // Jump to input to start typing
 )
 
 // Selection actions
@@ -131,6 +132,7 @@ var Registry = map[Action]ActionInfo{
 	ActionGoToChat:     {Action: ActionGoToChat, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.go_to_chat"},
 	ActionGoToActivity: {Action: ActionGoToActivity, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.go_to_activity"},
 	ActionGoToUser:     {Action: ActionGoToUser, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.go_to_user"},
+	ActionBeginInput:   {Action: ActionBeginInput, Scopes: []ActionScope{ScopeChat}, Description: "keys.begin_input"},
 
 	// Selection actions
 	ActionContinue: {Action: ActionContinue, Scopes: []ActionScope{ScopeGlobal, ScopeInit}, Description: "keys.continue"},

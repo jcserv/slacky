@@ -146,6 +146,9 @@ other = "go to activity"
 [keys.go_to_user]
 other = "go to user"
 
+[keys.begin_input]
+other = "begin typing"
+
 # Selection actions
 [keys.enter]
 other = "enter"
