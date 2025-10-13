@@ -183,7 +183,6 @@ func (m Model) runOAuthFlow() tea.Cmd {
 			},
 			WriteSuccessHTML: writeSuccessPage,
 		})
-
 		if err != nil {
 			return OAuthErrorMsg{Err: err}
 		}

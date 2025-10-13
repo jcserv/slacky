@@ -23,6 +23,7 @@ dev: clean build run
 lint:
 	go mod tidy
 	go fmt .
+	gofumpt -w .
 	golangci-lint run . --fix
 
 test:
