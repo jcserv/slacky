@@ -34,7 +34,7 @@ func NewModel() Model {
 	localizer := slackyI18n.NewLocalizer(locale)
 
 	ta := textarea.New()
-	ta.SetHeight(3)
+	ta.SetHeight(1)
 	ta.ShowLineNumbers = false
 	ta.CharLimit = 4000 // Slack message limit
 
@@ -49,7 +49,7 @@ func NewModel() Model {
 	m := Model{
 		textarea:  ta,
 		width:     80,
-		height:    5,
+		height:    2,
 		focused:   false,
 		localizer: localizer,
 	}
@@ -119,12 +119,8 @@ func (m *Model) SetSize(width, height int) {
 	}
 	m.textarea.SetWidth(textareaWidth)
 
-	// Height should be fixed for input
-	inputHeight := 3
-	if height > 5 {
-		inputHeight = 4
-	}
-	m.textarea.SetHeight(inputHeight)
+	// Height should be fixed for input (1 line for textarea)
+	m.textarea.SetHeight(1)
 }
 
 // SetFocused sets the focus state of the input

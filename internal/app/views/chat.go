@@ -125,14 +125,13 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 			m.cycleFocusBackward()
 			return m, nil
 		case "enter":
-			// If on sidebar, select channel and move to input
+			// If on sidebar, select channel (keep focus on sidebar)
 			if m.focused == FocusSidebar {
 				selectedCh := m.sidebar.GetSelectedChannel()
 				if selectedCh != nil {
 					m.selectedChannel = selectedCh
 					m.messages.SetChannel(selectedCh.ID, selectedCh.GetDisplayName())
-					// Move focus to input for immediate typing
-					m.setFocus(FocusInput)
+					// Keep focus on sidebar so users can cycle through channels
 					// Emit channel selection message to trigger loading
 					return m, func() tea.Msg {
 						return ChannelSelectedMsg{ChannelID: selectedCh.ID}
@@ -192,11 +191,12 @@ func (m *ChatModel) SetSize(width, height int) {
 	// Content area: box width minus borders (2 for left/right)
 	contentWidth := boxOuterWidth - 2
 
-	// Input: fixed height of ~5 lines
-	inputHeight := 5
+	// Input: fixed height of 2 lines (minimal)
+	inputHeight := 2
 
-	// Messages: remaining height minus input, divider, and box border (4 chars: 2 for top/bottom border + 1 for divider + 1 padding)
-	messagesHeight := height - inputHeight - 5
+	// Messages: remaining height minus input, divider, and box border
+	// height - 2 (input) - 1 (divider) - 2 (box borders) = height - 5
+	messagesHeight := height - inputHeight - 3
 
 	// Set component sizes
 	m.sidebar.SetSize(sidebarWidth, height)
@@ -229,20 +229,28 @@ func (m ChatModel) View() string {
 	messagesView := m.messages.View()
 	if m.selectedChannel == nil {
 		// Show empty state when no channel is selected
+		// Use same height calculation as messagesHeight: height - inputHeight - 3
+		emptyStateHeight := m.height - 2 - 3 // height - inputHeight - (divider + borders)
 		emptyState := lipgloss.NewStyle().
 			Width(contentWidth).
-			Height(m.height-10). // Account for input area
+			Height(emptyStateHeight).
 			Align(lipgloss.Center, lipgloss.Center).
 			Render(styles.Dim.Render(m.localize("chat.no_channel_selected", "Select a channel to start chatting")))
 		messagesView = emptyState
 	}
+
+	// Wrap input view with fixed height to prevent flickering
+	// Input height is always 2 lines (matching inputHeight in SetSize)
+	inputView := lipgloss.NewStyle().
+		Height(2).
+		Render(m.input.View())
 
 	// Render messages and input (stacked vertically with divider)
 	messagesAndInput := lipgloss.JoinVertical(
 		lipgloss.Left,
 		messagesView,
 		divider,
-		m.input.View(),
+		inputView,
 	)
 
 	// Wrap content in a bordered box that matches sidebar height

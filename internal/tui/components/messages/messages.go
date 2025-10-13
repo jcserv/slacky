@@ -149,7 +149,7 @@ func (m *Model) renderMessages() {
 		lines = append(lines, m.formatMessage(msg, contentWidth))
 	}
 
-	content := strings.Join(lines, "\n\n")
+	content := strings.Join(lines, "\n")
 	m.viewport.SetContent(content)
 }
 

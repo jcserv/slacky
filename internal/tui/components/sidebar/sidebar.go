@@ -135,13 +135,12 @@ func (m Model) View() string {
 		borderStyle = borderStyle.BorderForeground(styles.ColourSuccess)
 	}
 
-	// Render list with title
+	// Render list with title (no spacing)
 	title := styles.Subtitle.Render(m.localize("chat.sidebar_title", "Channels"))
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		m.list.View(),
-	)
+	listView := m.list.View()
+
+	// Concatenate title and list directly (no newline)
+	content := title + listView
 
 	return borderStyle.Render(content)
 }
@@ -153,7 +152,7 @@ func (m *Model) SetSize(width, height int) {
 
 	// Calculate list dimensions (account for border and title)
 	listWidth := width - 4   // 2 for border, 2 for padding
-	listHeight := height - 5 // 2 for border, 1 for title, 2 for padding
+	listHeight := height - 3 // 2 for border, 1 for title line (no newline gap)
 
 	if listWidth < 1 {
 		listWidth = 1
