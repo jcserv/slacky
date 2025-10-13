@@ -40,14 +40,14 @@ func FromSlackMessage(sm slack.Message, channelID string) Message {
 	timestamp, _ := parseSlackTimestamp(sm.Timestamp)
 
 	msg := Message{
-		ID:        sm.Timestamp, // Use timestamp as ID
-		ChannelID: channelID,
-		UserID:    sm.User,
-		Text:      sm.Text,
-		Timestamp: timestamp,
-		ThreadTS:  sm.ThreadTimestamp,
-		IsEdited:  sm.Edited != nil,
-		Files:     sm.Files,
+		ID:          sm.Timestamp, // Use timestamp as ID
+		ChannelID:   channelID,
+		UserID:      sm.User,
+		Text:        sm.Text,
+		Timestamp:   timestamp,
+		ThreadTS:    sm.ThreadTimestamp,
+		IsEdited:    sm.Edited != nil,
+		Files:       sm.Files,
 		Attachments: sm.Attachments,
 	}
 
@@ -73,7 +73,7 @@ func parseSlackTimestamp(ts string) (time.Time, error) {
 
 	// Parse the seconds part
 	var seconds int64
-	fmt.Sscanf(parts[0], "%d", &seconds)
+	_, _ = fmt.Sscanf(parts[0], "%d", &seconds)
 
 	return time.Unix(seconds, 0), nil
 }

@@ -28,7 +28,7 @@ func TestNewTUI(t *testing.T) {
 		},
 	}
 
-	app, err := New(nil, cfg)
+	app, err := New(context.TODO(), cfg)
 	if err != nil {
 		t.Fatalf("Failed to create app: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestTUIModelInit(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 
 	cmd := m.Init()
@@ -119,7 +119,7 @@ func TestTUIModelUpdateWindowSize(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 	m.authSuccess = true // Set to authenticated state
 

@@ -7,6 +7,9 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/models"
 	"github.com/jcserv/slacky/internal/tui/styles"
 	"github.com/muesli/reflow/wordwrap"
@@ -23,18 +26,25 @@ type Model struct {
 	// Current channel info
 	channelName string
 	channelID   string
+
+	// i18n
+	localizer *i18n.Localizer
 }
 
 // NewModel creates a new messages model
 func NewModel() Model {
+	locale := slackyI18n.DetectLocale()
+	localizer := slackyI18n.NewLocalizer(locale)
+
 	vp := viewport.New(80, 20)
 	vp.SetContent("No messages to display")
 
 	return Model{
-		viewport: vp,
-		messages: []models.Message{},
-		width:    80,
-		height:   20,
+		viewport:  vp,
+		messages:  []models.Message{},
+		width:     80,
+		height:    20,
+		localizer: localizer,
 	}
 }
 
@@ -85,7 +95,7 @@ func (m Model) View() string {
 // renderHeader renders the channel header
 func (m Model) renderHeader() string {
 	if m.channelName == "" {
-		return styles.Subtitle.Render("Select a channel")
+		return styles.Subtitle.Render(m.localize("chat.select_channel", "Select a channel"))
 	}
 
 	channelDisplay := styles.Title.Render(m.channelName)
@@ -129,7 +139,7 @@ func (m *Model) AddMessage(msg models.Message) {
 // renderMessages renders all messages to the viewport content
 func (m *Model) renderMessages() {
 	if len(m.messages) == 0 {
-		m.viewport.SetContent(styles.Dim.Render("No messages yet. Start the conversation!"))
+		m.viewport.SetContent(styles.Dim.Render(m.localize("chat.no_messages", "No messages yet. Start the conversation!")))
 		return
 	}
 
@@ -152,13 +162,13 @@ func (m *Model) formatMessage(msg models.Message, width int) string {
 
 	// Handle empty username (system messages, etc.)
 	if msg.UserName == "" {
-		username = styles.Dim.Render("Unknown")
+		username = styles.Dim.Render(m.localize("chat.unknown_user", "Unknown"))
 	}
 
 	// Wrap the message text
 	messageText := msg.GetDisplayText()
 	if messageText == "" {
-		messageText = styles.Dim.Italic(true).Render("(no content)")
+		messageText = styles.Dim.Italic(true).Render(fmt.Sprintf("(%s)", m.localize("chat.no_content", "no content")))
 	}
 
 	// Calculate width for wrapping (total - timestamp - username - separators)
@@ -181,7 +191,7 @@ func (m *Model) formatMessage(msg models.Message, width int) string {
 
 	// Show edited indicator
 	if msg.IsEdited {
-		firstLine += styles.Dim.Render(" (edited)")
+		firstLine += styles.Dim.Render(fmt.Sprintf(" (%s)", m.localize("chat.edited", "edited")))
 	}
 
 	// Add reactions if any
@@ -215,22 +225,22 @@ func (m Model) IsFocused() bool {
 
 // ScrollUp scrolls the viewport up
 func (m *Model) ScrollUp(lines int) {
-	m.viewport.LineUp(lines)
+	m.viewport.ScrollUp(lines)
 }
 
 // ScrollDown scrolls the viewport down
 func (m *Model) ScrollDown(lines int) {
-	m.viewport.LineDown(lines)
+	m.viewport.ScrollDown(lines)
 }
 
 // PageUp scrolls up by half a page
 func (m *Model) PageUp() {
-	m.viewport.HalfViewUp()
+	m.viewport.HalfPageUp()
 }
 
 // PageDown scrolls down by half a page
 func (m *Model) PageDown() {
-	m.viewport.HalfViewDown()
+	m.viewport.HalfPageDown()
 }
 
 // GotoTop scrolls to the top
@@ -241,4 +251,16 @@ func (m *Model) GotoTop() {
 // GotoBottom scrolls to the bottom
 func (m *Model) GotoBottom() {
 	m.viewport.GotoBottom()
+}
+
+// localize is a helper function to localize a message by ID with an optional fallback
+func (m Model) localize(messageID string, fallback string) string {
+	cfg := &i18n.LocalizeConfig{
+		MessageID: messageID,
+	}
+	msg, err := m.localizer.Localize(cfg)
+	if err != nil && fallback != "" {
+		return fallback
+	}
+	return msg
 }

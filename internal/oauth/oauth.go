@@ -23,11 +23,11 @@ const (
 )
 
 var (
-	ErrTimeout       = errors.New("OAuth flow timed out")
-	ErrAuthFailed    = errors.New("OAuth authorization failed")
-	ErrServerFailed  = errors.New("failed to start OAuth callback server")
-	ErrInvalidState  = errors.New("invalid OAuth state parameter")
-	ErrAccessDenied  = errors.New("user denied access")
+	ErrTimeout      = errors.New("OAuth flow timed out")
+	ErrAuthFailed   = errors.New("OAuth authorization failed")
+	ErrServerFailed = errors.New("failed to start OAuth callback server")
+	ErrInvalidState = errors.New("invalid OAuth state parameter")
+	ErrAccessDenied = errors.New("user denied access")
 )
 
 // FlowOptions contains options for the OAuth flow
@@ -252,9 +252,9 @@ func exchangeCode(ctx context.Context, clientID, clientSecret, code, redirectURI
 
 	// For user tokens, we want the authed_user access token
 	if result.AuthedUser.AccessToken != "" {
-		result.TokenResponse.AccessToken = result.AuthedUser.AccessToken
-		result.TokenResponse.TokenType = result.AuthedUser.TokenType
-		result.TokenResponse.Scope = result.AuthedUser.Scope
+		result.AccessToken = result.AuthedUser.AccessToken
+		result.TokenType = result.AuthedUser.TokenType
+		result.Scope = result.AuthedUser.Scope
 	}
 
 	return &result.TokenResponse, nil

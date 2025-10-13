@@ -6,6 +6,9 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
@@ -15,6 +18,9 @@ type Model struct {
 	width    int
 	height   int
 	focused  bool
+
+	// i18n
+	localizer *i18n.Localizer
 }
 
 // SendMessageMsg is sent when the user wants to send a message
@@ -24,8 +30,10 @@ type SendMessageMsg struct {
 
 // NewModel creates a new input model
 func NewModel() Model {
+	locale := slackyI18n.DetectLocale()
+	localizer := slackyI18n.NewLocalizer(locale)
+
 	ta := textarea.New()
-	ta.Placeholder = "Type a message..."
 	ta.SetHeight(3)
 	ta.ShowLineNumbers = false
 	ta.CharLimit = 4000 // Slack message limit
@@ -42,12 +50,18 @@ func NewModel() Model {
 	ta.BlurredStyle.Prompt = styles.Dim
 	ta.Prompt = "> "
 
-	return Model{
-		textarea: ta,
-		width:    80,
-		height:   5,
-		focused:  false,
+	m := Model{
+		textarea:  ta,
+		width:     80,
+		height:    5,
+		focused:   false,
+		localizer: localizer,
 	}
+
+	// Set localized placeholder
+	m.textarea.Placeholder = m.localize("chat.message_placeholder", "Type a message...")
+
+	return m
 }
 
 // Init initializes the input component
@@ -164,4 +178,16 @@ func (m *Model) Reset() {
 // IsEmpty returns whether the input is empty
 func (m Model) IsEmpty() bool {
 	return strings.TrimSpace(m.textarea.Value()) == ""
+}
+
+// localize is a helper function to localize a message by ID with an optional fallback
+func (m Model) localize(messageID string, fallback string) string {
+	cfg := &i18n.LocalizeConfig{
+		MessageID: messageID,
+	}
+	msg, err := m.localizer.Localize(cfg)
+	if err != nil && fallback != "" {
+		return fallback
+	}
+	return msg
 }

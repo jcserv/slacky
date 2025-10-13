@@ -39,9 +39,9 @@ func (m Model) View() string {
 	s.WriteString(m.logoRendered)
 	s.WriteString("\n\n")
 
-	s.WriteString(styles.Title.Render("Thanks for trying out Slacky!"))
+	s.WriteString(styles.Title.Render(m.localize("oauth.title", "Thanks for trying out Slacky!")))
 	s.WriteString("\n")
-	s.WriteString(styles.Subtitle.Render("Let's set up your Slack workspace connection"))
+	s.WriteString(styles.Subtitle.Render(m.localize("oauth.subtitle", "Let's set up your Slack workspace connection")))
 	s.WriteString("\n\n")
 
 	if m.step == StepError {
@@ -54,11 +54,11 @@ func (m Model) View() string {
 
 	// Show OAuth setup instructions on welcome and input steps
 	if m.step >= StepWelcome && m.step < StepRunningOAuth {
-		s.WriteString(styles.Highlight.Render("🔐 OAuth Setup"))
+		s.WriteString(styles.Highlight.Render(m.localize("oauth.setup_title", "🔐 OAuth Setup")))
 		s.WriteString("\n")
-		s.WriteString(styles.Subtitle.Render("  • Get your Client ID and Client Secret from https://api.slack.com/apps"))
+		s.WriteString(styles.Subtitle.Render(m.localize("oauth.setup_instruction_1", "  • Get your Client ID and Client Secret from https://api.slack.com/apps")))
 		s.WriteString("\n")
-		s.WriteString(styles.Subtitle.Render("  • Go to your app → Basic Information → App Credentials"))
+		s.WriteString(styles.Subtitle.Render(m.localize("oauth.setup_instruction_2", "  • Go to your app → Basic Information → App Credentials")))
 		s.WriteString("\n")
 	}
 
@@ -75,14 +75,14 @@ func (m Model) View() string {
 	// Render Client ID step
 	if m.step >= StepClientID {
 		if m.step > StepClientID {
-			s.WriteString(styles.Completed.Render("✓ Client ID"))
+			s.WriteString(styles.Completed.Render(m.localize("oauth.client_id_completed", "✓ Client ID")))
 			s.WriteString("\n")
 			s.WriteString(styles.Dim.Render("  " + maskCredential(m.clientID.Value())))
 			s.WriteString("\n\n")
 		} else {
-			s.WriteString(styles.Label.Render("Client ID"))
+			s.WriteString(styles.Label.Render(m.localize("oauth.client_id_label", "Client ID")))
 			s.WriteString("\n")
-			s.WriteString(styles.Subtitle.Render("Enter your Slack app's Client ID"))
+			s.WriteString(styles.Subtitle.Render(m.localize("oauth.client_id_prompt", "Enter your Slack app's Client ID")))
 			s.WriteString("\n\n")
 			s.WriteString("  " + m.clientID.View())
 			s.WriteString("\n\n")
@@ -96,14 +96,14 @@ func (m Model) View() string {
 	// Render Client Secret step
 	if m.step >= StepClientSecret {
 		if m.step > StepClientSecret {
-			s.WriteString(styles.Completed.Render("✓ Client Secret"))
+			s.WriteString(styles.Completed.Render(m.localize("oauth.client_secret_completed", "✓ Client Secret")))
 			s.WriteString("\n")
 			s.WriteString(styles.Dim.Render("  " + maskCredential(m.clientSecret.Value())))
 			s.WriteString("\n\n")
 		} else {
-			s.WriteString(styles.Label.Render("Client Secret"))
+			s.WriteString(styles.Label.Render(m.localize("oauth.client_secret_label", "Client Secret")))
 			s.WriteString("\n")
-			s.WriteString(styles.Subtitle.Render("Enter your Slack app's Client Secret"))
+			s.WriteString(styles.Subtitle.Render(m.localize("oauth.client_secret_prompt", "Enter your Slack app's Client Secret")))
 			s.WriteString("\n\n")
 			s.WriteString("  " + m.clientSecret.View())
 			s.WriteString("\n\n")
@@ -116,9 +116,9 @@ func (m Model) View() string {
 
 	// Render OAuth flow running
 	if m.step == StepRunningOAuth {
-		s.WriteString(fmt.Sprintf("%s %s", m.spinner.View(), "Running OAuth flow..."))
+		s.WriteString(fmt.Sprintf("%s %s", m.spinner.View(), m.localize("oauth.running", "Running OAuth flow...")))
 		s.WriteString("\n")
-		s.WriteString(styles.Dim.Render("  Your browser will open for authorization"))
+		s.WriteString(styles.Dim.Render(m.localize("oauth.browser_prompt", "  Your browser will open for authorization")))
 		s.WriteString("\n\n")
 	}
 
@@ -135,11 +135,11 @@ func (m Model) View() string {
 func renderErrorView(m Model, s *strings.Builder) string {
 	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n\n")
-	s.WriteString(styles.Error.Render("✗ OAuth failed"))
+	s.WriteString(styles.Error.Render(m.localize("oauth.failed", "✗ OAuth failed")))
 	s.WriteString("\n\n")
 	s.WriteString(styles.Subtitle.Render(m.err.Error()))
 	s.WriteString("\n\n")
-	s.WriteString(styles.Help.Render("Press Enter to exit"))
+	s.WriteString(styles.Help.Render(m.localize("oauth.press_enter_exit", "Press Enter to exit")))
 	s.WriteString("\n")
 	return s.String()
 }
@@ -148,15 +148,15 @@ func renderErrorView(m Model, s *strings.Builder) string {
 func renderSuccessView(m Model, s *strings.Builder) string {
 	s.WriteString(tui.RenderBorder(63))
 	s.WriteString("\n\n")
-	s.WriteString(styles.Success.Render("✓ Successfully authenticated!"))
+	s.WriteString(styles.Success.Render(m.localize("oauth.success", "✓ Successfully authenticated!")))
 	s.WriteString("\n\n")
 	if m.tokenResp != nil {
-		s.WriteString(styles.Label.Render("  Team: ") + m.tokenResp.Team.Name)
+		s.WriteString(styles.Label.Render(m.localize("oauth.team_label", "  Team: ")) + m.tokenResp.Team.Name)
 		s.WriteString("\n")
-		s.WriteString(styles.Label.Render("  User: ") + m.tokenResp.AuthedUser.ID)
+		s.WriteString(styles.Label.Render(m.localize("oauth.user_label", "  User: ")) + m.tokenResp.AuthedUser.ID)
 		s.WriteString("\n\n")
 	}
-	s.WriteString(styles.Subtitle.Render("Press Enter to continue"))
+	s.WriteString(styles.Subtitle.Render(m.localize("oauth.press_enter_continue", "Press Enter to continue")))
 	s.WriteString("\n")
 	return s.String()
 }

@@ -313,3 +313,84 @@ other = "Unknown"
 
 [chat.system_channel]
 other = "system"
+
+# OAuth Wizard
+[oauth.title]
+other = "Thanks for trying out Slacky!"
+
+[oauth.subtitle]
+other = "Let's set up your Slack workspace connection"
+
+[oauth.setup_title]
+other = "🔐 OAuth Setup"
+
+[oauth.setup_instruction_1]
+other = "  • Get your Client ID and Client Secret from https://api.slack.com/apps"
+
+[oauth.setup_instruction_2]
+other = "  • Go to your app → Basic Information → App Credentials"
+
+[oauth.client_id_label]
+other = "Client ID"
+
+[oauth.client_id_prompt]
+other = "Enter your Slack app's Client ID"
+
+[oauth.client_id_completed]
+other = "✓ Client ID"
+
+[oauth.client_secret_label]
+other = "Client Secret"
+
+[oauth.client_secret_prompt]
+other = "Enter your Slack app's Client Secret"
+
+[oauth.client_secret_completed]
+other = "✓ Client Secret"
+
+[oauth.running]
+other = "Running OAuth flow..."
+
+[oauth.browser_prompt]
+other = "  Your browser will open for authorization"
+
+[oauth.failed]
+other = "✗ OAuth failed"
+
+[oauth.press_enter_exit]
+other = "Press Enter to exit"
+
+[oauth.success]
+other = "✓ Successfully authenticated!"
+
+[oauth.team_label]
+other = "  Team: "
+
+[oauth.user_label]
+other = "  User: "
+
+[oauth.press_enter_continue]
+other = "Press Enter to continue"
+
+# User View
+[user.title]
+other = "👤 User Information"
+
+[user.user_label]
+other = "User: "
+
+[user.workspace_label]
+other = "Workspace: "
+
+[user.coming_soon]
+other = "Coming soon: User preferences, status, and account settings."
+
+# Activity View
+[activity.title]
+other = "📊 Activity View"
+
+[activity.subtitle]
+other = "This is where activity notifications will appear."
+
+[activity.coming_soon]
+other = "Coming soon: Mentions, reactions, and thread updates."

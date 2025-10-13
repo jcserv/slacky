@@ -88,7 +88,7 @@ func initialModel() Model {
 
 // writeSuccessPage writes the OAuth success HTML page
 func writeSuccessPage(w io.Writer) {
-	io.WriteString(w, `<!DOCTYPE html>
+	_, _ = io.WriteString(w, `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">

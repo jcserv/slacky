@@ -127,9 +127,7 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 	case ChannelSelectedMsg:
 		// Load messages for the newly selected channel
 		return m, func() tea.Msg {
-			return LoadChannelMessagesMsg{
-				ChannelID: msg.ChannelID,
-			}
+			return LoadChannelMessagesMsg(msg)
 		}
 	}
 

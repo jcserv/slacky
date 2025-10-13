@@ -112,7 +112,7 @@ func (m Model) handleContinue() (tea.Model, tea.Cmd) {
 		// Validate Client ID
 		clientID := strings.TrimSpace(m.clientID.Value())
 		if clientID == "" {
-			m.err = fmt.Errorf("Client ID cannot be empty")
+			m.err = fmt.Errorf("client ID cannot be empty")
 			return m, nil
 		}
 		m.err = nil
@@ -125,7 +125,7 @@ func (m Model) handleContinue() (tea.Model, tea.Cmd) {
 		// Validate Client Secret
 		clientSecret := strings.TrimSpace(m.clientSecret.Value())
 		if clientSecret == "" {
-			m.err = fmt.Errorf("Client Secret cannot be empty")
+			m.err = fmt.Errorf("client secret cannot be empty")
 			return m, nil
 		}
 		m.err = nil

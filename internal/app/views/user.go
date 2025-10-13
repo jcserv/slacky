@@ -55,10 +55,10 @@ func (m *UserModel) SetUserInfo(userName, teamName string) {
 // View renders the user info view
 func (m UserModel) View() string {
 	// User information
-	userInfo := styles.Title.Render("👤 User Information") + "\n\n" +
-		styles.Label.Render("User: ") + styles.Highlight.Render(m.userName) + "\n" +
-		styles.Label.Render("Workspace: ") + styles.Info.Render(m.teamName) + "\n\n" +
-		styles.Dim.Render("Coming soon: User preferences, status, and account settings.")
+	userInfo := styles.Title.Render(m.localize("user.title", "👤 User Information")) + "\n\n" +
+		styles.Label.Render(m.localize("user.user_label", "User: ")) + styles.Highlight.Render(m.userName) + "\n" +
+		styles.Label.Render(m.localize("user.workspace_label", "Workspace: ")) + styles.Info.Render(m.teamName) + "\n\n" +
+		styles.Dim.Render(m.localize("user.coming_soon", "Coming soon: User preferences, status, and account settings."))
 
 	// Placeholder content
 	content := lipgloss.NewStyle().

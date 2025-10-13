@@ -6,6 +6,9 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/models"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
@@ -17,6 +20,9 @@ type Model struct {
 	width    int
 	height   int
 	focused  bool
+
+	// i18n
+	localizer *i18n.Localizer
 }
 
 // channelItem implements list.Item interface for the Bubbles list
@@ -47,6 +53,9 @@ func (i channelItem) FilterValue() string {
 
 // NewModel creates a new sidebar model
 func NewModel() Model {
+	locale := slackyI18n.DetectLocale()
+	localizer := slackyI18n.NewLocalizer(locale)
+
 	// Create custom list delegate for styling
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = true
@@ -76,11 +85,12 @@ func NewModel() Model {
 	l.Styles.FilterCursor = styles.Label
 
 	return Model{
-		list:     l,
-		channels: []models.Channel{},
-		width:    20,
-		height:   24,
-		focused:  false,
+		list:      l,
+		channels:  []models.Channel{},
+		width:     20,
+		height:    24,
+		focused:   false,
+		localizer: localizer,
 	}
 }
 
@@ -126,7 +136,7 @@ func (m Model) View() string {
 	}
 
 	// Render list with title
-	title := styles.Subtitle.Render("Channels")
+	title := styles.Subtitle.Render(m.localize("chat.sidebar_title", "Channels"))
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
@@ -142,7 +152,7 @@ func (m *Model) SetSize(width, height int) {
 	m.height = height
 
 	// Calculate list dimensions (account for border and title)
-	listWidth := width - 4  // 2 for border, 2 for padding
+	listWidth := width - 4   // 2 for border, 2 for padding
 	listHeight := height - 5 // 2 for border, 1 for title, 2 for padding
 
 	if listWidth < 1 {
@@ -222,4 +232,16 @@ func (m *Model) PrevChannel() {
 	if idx > 0 {
 		m.list.Select(idx - 1)
 	}
+}
+
+// localize is a helper function to localize a message by ID with an optional fallback
+func (m Model) localize(messageID string, fallback string) string {
+	cfg := &i18n.LocalizeConfig{
+		MessageID: messageID,
+	}
+	msg, err := m.localizer.Localize(cfg)
+	if err != nil && fallback != "" {
+		return fallback
+	}
+	return msg
 }

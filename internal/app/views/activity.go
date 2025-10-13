@@ -52,9 +52,9 @@ func (m ActivityModel) View() string {
 		Height(m.height).
 		Padding(2).
 		Render(
-			styles.Title.Render("📊 Activity View") + "\n\n" +
-				styles.Subtitle.Render("This is where activity notifications will appear.") + "\n\n" +
-				styles.Dim.Render("Coming soon: Mentions, reactions, and thread updates."),
+			styles.Title.Render(m.localize("activity.title", "📊 Activity View")) + "\n\n" +
+				styles.Subtitle.Render(m.localize("activity.subtitle", "This is where activity notifications will appear.")) + "\n\n" +
+				styles.Dim.Render(m.localize("activity.coming_soon", "Coming soon: Mentions, reactions, and thread updates.")),
 		)
 
 	return content
