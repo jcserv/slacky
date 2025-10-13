@@ -144,7 +144,7 @@ func TestTUIModelUpdateQuit(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 
 	msg := tea.KeyMsg{Type: tea.KeyCtrlC}
@@ -168,7 +168,7 @@ func TestTUIModelUpdateTabNavigation(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 	m.authSuccess = true // Must be authenticated to navigate tabs
 
@@ -216,7 +216,7 @@ func TestTUIModelUpdateTabNavigationWithoutAuth(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 	m.authSuccess = false // Not authenticated
 
@@ -240,7 +240,7 @@ func TestTUIModelUpdateAuthSuccess(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 
 	msg := authSuccessMsg{
@@ -271,7 +271,7 @@ func TestTUIModelUpdateError(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 
 	testErr := errMsg(tea.ErrProgramKilled)
@@ -290,7 +290,7 @@ func TestTUIModelViewStates(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 
 	t.Run("Loading state", func(t *testing.T) {
@@ -356,7 +356,7 @@ func TestTUIModelViewSwitching(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 	m.authSuccess = true
 	m.width = 100
@@ -406,7 +406,7 @@ func TestTUIKeyBindings(t *testing.T) {
 		},
 	}
 
-	app, _ := New(nil, cfg)
+	app, _ := New(context.TODO(), cfg)
 	m := app.NewTUI()
 
 	t.Run("Quit key binding", func(t *testing.T) {

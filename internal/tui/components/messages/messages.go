@@ -85,7 +85,6 @@ func (m Model) View() string {
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		header,
-		styles.Border.Render(strings.Repeat("─", m.width-2)),
 		viewportContent,
 	)
 
@@ -111,8 +110,8 @@ func (m *Model) SetSize(width, height int) {
 	m.width = width
 	m.height = height
 
-	// Account for header (3 lines: title + padding + border)
-	viewportHeight := height - 3
+	// Account for header (2 lines: title + padding)
+	viewportHeight := height - 2
 	if viewportHeight < 1 {
 		viewportHeight = 1
 	}

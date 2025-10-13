@@ -10,6 +10,7 @@ import (
 	"github.com/jcserv/slacky/internal/tui/components/input"
 	"github.com/jcserv/slacky/internal/tui/components/messages"
 	"github.com/jcserv/slacky/internal/tui/components/sidebar"
+	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
 // FocusedComponent represents which component is currently focused
@@ -153,23 +154,19 @@ func (m *ChatModel) SetSize(width, height int) {
 	m.height = height
 
 	// Calculate dimensions
-	// Sidebar: ~25% of width, minimum 20 chars
-	sidebarWidth := width / 4
-	if sidebarWidth < 20 {
-		sidebarWidth = 20
-	}
-	if sidebarWidth > 40 {
-		sidebarWidth = 40
-	}
+	sidebarWidth := m.getSidebarWidth()
 
-	// Content area: remaining width
-	contentWidth := width - sidebarWidth
+	// Content box outer width (including borders)
+	boxOuterWidth := width - sidebarWidth
 
-	// Input: fixed height of ~5 lines (including borders)
+	// Content area: box width minus borders (2 for left/right)
+	contentWidth := boxOuterWidth - 2
+
+	// Input: fixed height of ~5 lines
 	inputHeight := 5
 
-	// Messages: remaining height
-	messagesHeight := height - inputHeight
+	// Messages: remaining height minus input, divider, and box border (4 chars: 2 for top/bottom border + 1 for divider + 1 padding)
+	messagesHeight := height - inputHeight - 5
 
 	// Set component sizes
 	m.sidebar.SetSize(sidebarWidth, height)
@@ -182,12 +179,46 @@ func (m ChatModel) View() string {
 	// Render sidebar
 	sidebarView := m.sidebar.View()
 
-	// Render messages and input (stacked vertically)
-	contentView := lipgloss.JoinVertical(
+	// Measure actual rendered sidebar width
+	actualSidebarWidth := lipgloss.Width(sidebarView)
+
+	// Calculate box dimensions using actual sidebar width
+	boxOuterWidth := m.width - actualSidebarWidth
+	contentWidth := boxOuterWidth - 2 // Inner width (subtract borders)
+
+	// Create divider between messages and input
+	dividerLine := ""
+	for i := 0; i < contentWidth; i++ {
+		dividerLine += "─"
+	}
+	divider := styles.Border.Render(dividerLine)
+
+	// Render messages view or empty state
+	messagesView := m.messages.View()
+	if m.selectedChannel == nil {
+		// Show empty state when no channel is selected
+		emptyState := lipgloss.NewStyle().
+			Width(contentWidth).
+			Height(m.height-10). // Account for input area
+			Align(lipgloss.Center, lipgloss.Center).
+			Render(styles.Dim.Render(m.localize("chat.no_channel_selected", "Select a channel to start chatting")))
+		messagesView = emptyState
+	}
+
+	// Render messages and input (stacked vertically with divider)
+	messagesAndInput := lipgloss.JoinVertical(
 		lipgloss.Left,
-		m.messages.View(),
+		messagesView,
+		divider,
 		m.input.View(),
 	)
+
+	// Wrap content in a bordered box that matches sidebar height
+	contentView := styles.Box.
+		Width(boxOuterWidth).    // Outer width including borders
+		MaxWidth(boxOuterWidth). // Enforce maximum width
+		Height(m.height).        // Match sidebar height
+		Render(messagesAndInput)
 
 	// Combine sidebar and content horizontally
 	fullView := lipgloss.JoinHorizontal(
@@ -197,6 +228,18 @@ func (m ChatModel) View() string {
 	)
 
 	return fullView
+}
+
+// getSidebarWidth returns the width of the sidebar
+func (m ChatModel) getSidebarWidth() int {
+	sidebarWidth := m.width / 4
+	if sidebarWidth < 20 {
+		sidebarWidth = 20
+	}
+	if sidebarWidth > 40 {
+		sidebarWidth = 40
+	}
+	return sidebarWidth
 }
 
 // cycleFocusForward cycles focus to the next component

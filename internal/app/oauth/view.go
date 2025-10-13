@@ -13,12 +13,9 @@ import (
 )
 
 // localize is a helper function to localize a message by ID with an optional fallback
-func (m Model) localize(messageID string, fallback string, templateData ...map[string]interface{}) string {
+func (m Model) localize(messageID string, fallback string) string {
 	cfg := &i18n.LocalizeConfig{
 		MessageID: messageID,
-	}
-	if len(templateData) > 0 {
-		cfg.TemplateData = templateData[0]
 	}
 	msg, err := m.localizer.Localize(cfg)
 	if err != nil && fallback != "" {

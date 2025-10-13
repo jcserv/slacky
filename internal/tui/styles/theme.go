@@ -76,13 +76,13 @@ var (
 		Padding(0, 2)
 
 	ActiveTab = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(Primary).
-		Background(ColourSubtle).
-		Padding(0, 2)
+			Bold(true).
+			Foreground(Primary).
+			Background(ColourSubtle).
+			Padding(0, 2)
 
 	TabSeparator = lipgloss.NewStyle().
-		Foreground(ColourSubtle)
+			Foreground(ColourSubtle)
 
 	TabsRow = lipgloss.NewStyle().
 		BorderBottom(true).
@@ -91,12 +91,12 @@ var (
 
 	// Status Bar
 	StatusBar = lipgloss.NewStyle().
-		Foreground(ColourForeground).
-		Background(ColourSubtle).
-		Padding(0, 1).
-		BorderTop(true).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(ColourSubtle)
+			Foreground(ColourForeground).
+			Background(ColourSubtle).
+			Padding(0, 1).
+			BorderTop(true).
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(ColourSubtle)
 )
 
 var (
@@ -105,6 +105,15 @@ var (
 
 	BorderActive = lipgloss.NewStyle().
 			Foreground(Primary)
+
+	// Box with rounded border for content areas
+	Box = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(ColourSubtle)
+
+	BoxActive = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(Primary)
 )
 
 // GetTheme returns a Theme struct with all styles
@@ -121,6 +130,7 @@ type Theme struct {
 	Completed    lipgloss.Style
 	Highlight    lipgloss.Style
 	Border       lipgloss.Style
+	Box          lipgloss.Style
 	Tab          lipgloss.Style
 	ActiveTab    lipgloss.Style
 	TabSeparator lipgloss.Style
@@ -142,6 +152,7 @@ func DefaultTheme() Theme {
 		Completed:    Completed,
 		Highlight:    Highlight,
 		Border:       Border,
+		Box:          Box,
 		Tab:          Tab,
 		ActiveTab:    ActiveTab,
 		TabSeparator: TabSeparator,

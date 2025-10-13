@@ -287,6 +287,9 @@ other = "Channels"
 [chat.select_channel]
 other = "Select a channel"
 
+[chat.no_channel_selected]
+other = "Select a channel to start chatting"
+
 [chat.no_messages]
 other = "No messages yet. Start the conversation!"
 

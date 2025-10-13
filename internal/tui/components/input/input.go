@@ -38,14 +38,10 @@ func NewModel() Model {
 	ta.ShowLineNumbers = false
 	ta.CharLimit = 4000 // Slack message limit
 
-	// Style the textarea
+	// Style the textarea (no border since we have an outer box)
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
-	ta.FocusedStyle.Base = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColourSuccess)
-	ta.BlurredStyle.Base = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.Primary)
+	ta.FocusedStyle.Base = lipgloss.NewStyle()
+	ta.BlurredStyle.Base = lipgloss.NewStyle()
 	ta.FocusedStyle.Prompt = styles.Label.Bold(true)
 	ta.BlurredStyle.Prompt = styles.Dim
 	ta.Prompt = "> "
@@ -108,16 +104,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 // View renders the input component
 func (m Model) View() string {
-	// Add a divider above the input
-	divider := styles.Border.Render(strings.Repeat("─", m.width-2))
-
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		divider,
-		m.textarea.View(),
-	)
-
-	return content
+	return m.textarea.View()
 }
 
 // SetSize sets the dimensions of the input

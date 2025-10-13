@@ -68,7 +68,7 @@ func (app *App) NewTUI() TUIModel {
 		chatView:     views.NewChatModel(),
 		activityView: views.NewActivityModel(),
 		userView:     views.NewUserModel(),
-		version:      "v0.1.0-dev", // TODO: Get from build info
+		version:      "v0.1.0-dev",
 		localizer:    localizer,
 		showHelp:     true, // Show help by default for new users
 	}
