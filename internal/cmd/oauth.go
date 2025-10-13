@@ -1,18 +1,14 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jcserv/slacky/internal/app"
+	oauthWizard "github.com/jcserv/slacky/internal/app/oauth"
 	"github.com/jcserv/slacky/internal/config"
-	"github.com/jcserv/slacky/internal/oauth"
-	"github.com/jcserv/slacky/internal/tui/components"
-	"github.com/jcserv/slacky/internal/tui/styles"
 	"github.com/jcserv/slacky/internal/version"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 // oauthCmd represents the oauth command
@@ -21,17 +17,15 @@ var oauthCmd = &cobra.Command{
 	Short: "Authenticate with Slack using OAuth",
 	Long: `Authenticate with Slack using OAuth 2.0.
 
-This command will:
-1. Start a local OAuth callback server
-2. Open your browser to Slack's authorization page
-3. Wait for you to approve the app
-4. Save your user token to ~/.config/slacky/config.yaml
+This command will guide you through:
+1. Entering your Slack app credentials (Client ID and Client Secret)
+2. Starting a local OAuth callback server
+3. Opening your browser to Slack's authorization page
+4. Waiting for you to approve the app
+5. Saving your user token to ~/.config/slacky/config.yaml
 
-Prerequisites:
-- Set SLACK_CLIENT_ID environment variable
-- Set SLACK_CLIENT_SECRET environment variable
-
-These can be found in your Slack app's Basic Information page.`,
+You can find your Client ID and Client Secret in your Slack app's Basic Information page:
+https://api.slack.com/apps`,
 	RunE: runOAuth,
 }
 
@@ -40,115 +34,19 @@ func init() {
 }
 
 func runOAuth(cmd *cobra.Command, args []string) error {
-	// Get terminal width for logo rendering
-	width, _, err := term.GetSize(0)
+	// Run the OAuth wizard
+	result, err := oauthWizard.RunWithVersion(version.Version)
 	if err != nil {
-		width = 80
+		return fmt.Errorf("oauth wizard failed: %w", err)
 	}
 
-	// Render logo with version
-	var logoRendered string
-	if width < components.MinWidth() {
-		logoRendered = components.SmallRender(version.Version, width)
-	} else {
-		logoRendered = components.Render(components.Opts{
-			Version:      version.Version,
-			Width:        width,
-			FillColor:    styles.ColourDim,
-			VersionColor: styles.Tertiary,
-		})
+	// If user cancelled, exit gracefully
+	if !result.ShouldContinue || result.TokenResponse == nil {
+		fmt.Println("OAuth setup cancelled.")
+		return nil
 	}
 
-	// Display logo
-	fmt.Println()
-	fmt.Println(logoRendered)
-	fmt.Println()
-
-	// Display title and subtitle
-	fmt.Println(styles.Title.Render("Thanks for trying out Slacky!"))
-	fmt.Println(styles.Subtitle.Render("Let's set up your Slack workspace connection"))
-	fmt.Println()
-
-	// Display OAuth instructions
-	fmt.Println(styles.Highlight.Render("🔐 OAuth Setup"))
-	fmt.Println(styles.Subtitle.Render("  • Set SLACK_CLIENT_ID environment variable"))
-	fmt.Println(styles.Subtitle.Render("  • Set SLACK_CLIENT_SECRET environment variable"))
-	fmt.Println(styles.Subtitle.Render("  • Find these at https://api.slack.com/apps → Basic Information"))
-	fmt.Println()
-
-	// Load OAuth config from environment
-	oauthCfg, err := oauth.LoadFromEnv()
-	if err != nil {
-		fmt.Println(styles.Error.Render("✗ Missing OAuth credentials"))
-		fmt.Println()
-		fmt.Println("Please set the required environment variables listed above.")
-		fmt.Println()
-		return err
-	}
-
-	fmt.Println(styles.Success.Render("✓ OAuth credentials loaded"))
-	fmt.Println()
-
-	// Scopes we need
-	scopes := []string{
-		"channels:history",
-		"channels:read",
-		"channels:write",
-		"chat:write",
-		"groups:history",
-		"groups:read",
-		"groups:write",
-		"im:history",
-		"im:read",
-		"im:write",
-		"mpim:history",
-		"mpim:read",
-		"mpim:write",
-		"users:read",
-	}
-
-	// Run OAuth flow
-	fmt.Println(styles.Label.Render("Starting OAuth flow..."))
-	fmt.Println()
-
-	ctx := context.Background()
-	tokenResp, err := oauth.Flow(ctx, oauth.FlowOptions{
-		ClientID:     oauthCfg.ClientID,
-		ClientSecret: oauthCfg.ClientSecret,
-		Scopes:       scopes,
-		Port:         8080, // Fixed port for Slack redirect URI
-		Timeout:      5 * time.Minute,
-		OnURL: func(authURL string) error {
-			fmt.Println(styles.Subtitle.Render("→ Opening browser for authorization..."))
-			fmt.Println()
-			fmt.Println(styles.Dim.Render("If your browser doesn't open automatically, visit:"))
-			fmt.Println(styles.Dim.Render("  " + authURL))
-			fmt.Println()
-
-			// Try to open browser
-			if err := oauth.OpenBrowser(authURL); err != nil {
-				fmt.Println(styles.Warning.Render("⚠ Failed to open browser automatically"))
-				fmt.Println(styles.Dim.Render("Please open the URL above manually."))
-			}
-
-			return nil
-		},
-		WriteSuccessHTML: writeSuccessPage,
-	})
-
-	if err != nil {
-		fmt.Println()
-		fmt.Println(styles.Error.Render("✗ OAuth failed: " + err.Error()))
-		return err
-	}
-
-	// Save config
-	fmt.Println()
-	fmt.Println(styles.Success.Render("✓ Successfully authenticated!"))
-	fmt.Println()
-	fmt.Println(styles.Label.Render("  Team:") + " " + tokenResp.Team.Name)
-	fmt.Println(styles.Label.Render("  User:") + " " + tokenResp.AuthedUser.ID)
-	fmt.Println()
+	tokenResp := result.TokenResponse
 
 	// Load or create config
 	cfg, err := config.Load()
@@ -174,61 +72,42 @@ func runOAuth(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	configPath, _ := config.ConfigPath()
-	fmt.Println(styles.Success.Render("✓ Configuration saved to:"))
-	fmt.Println(styles.Dim.Render("  " + configPath))
-	fmt.Println()
-	fmt.Println(styles.Subtitle.Render("You can now run ") + styles.Label.Bold(true).Render("slacky") + styles.Subtitle.Render(" to start the app!"))
-	fmt.Println()
+	// If OAuth completed successfully, continue to main app
+	if result.ShouldContinue {
+		fmt.Println("Setup complete! Starting Slacky...")
+		fmt.Println()
+
+		// Validate config
+		if err := cfg.Validate(); err != nil {
+			return fmt.Errorf("invalid config: %w", err)
+		}
+
+		// Create and run the main app
+		return runMainAppOAuth(cmd, cfg)
+	}
 
 	return nil
 }
 
-func writeSuccessPage(w io.Writer) {
-	fmt.Fprint(w, `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Slacky - Authentication Successful</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .container {
-            background: white;
-            padding: 3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            max-width: 400px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 1rem;
-        }
-        p {
-            color: #666;
-            line-height: 1.6;
-        }
-        .checkmark {
-            font-size: 4rem;
-            color: #4CAF50;
-            margin-bottom: 1rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="checkmark">✓</div>
-        <h1>Authentication Successful!</h1>
-        <p>You can now close this window and return to your terminal.</p>
-    </div>
-</body>
-</html>`)
+// runMainAppOAuth creates and runs the main application TUI after OAuth
+func runMainAppOAuth(cmd *cobra.Command, cfg *config.Config) error {
+	ctx := cmd.Context()
+
+	// Create app instance
+	appInstance, err := app.New(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create app instance: %w", err)
+	}
+	defer appInstance.Shutdown()
+
+	// Set up the TUI
+	program := tea.NewProgram(
+		appInstance.NewTUI(),
+		tea.WithAltScreen(),
+	)
+
+	if _, err := program.Run(); err != nil {
+		return fmt.Errorf("TUI run error: %w", err)
+	}
+	return nil
 }
