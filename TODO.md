@@ -1,6 +1,5 @@
 # current work
 main view: 
- - statusbar should show the current selected channel
  - should also load in DMs
 
 # mvp

@@ -190,6 +190,11 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, sendMessage(m.app.SlackClient, msg.ChannelID, msg.Text)
 
 	case views.LoadChannelMessagesMsg:
+		// Update status bar with selected channel name
+		selectedCh := m.chatView.GetSelectedChannel()
+		if selectedCh != nil {
+			m.statusBar.SetCurrentChannel(selectedCh.Name)
+		}
 		// Load messages for the selected channel
 		return m, loadMessages(m.app.SlackClient, msg.ChannelID, 100)
 
