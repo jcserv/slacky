@@ -1,10 +1,7 @@
 # current work
-os key recognition: 
-- windows: ctrl
-- mac: cmd
-- linux: ctrl
-
-- custom keymapping support
+main view: 
+ - statusbar should show the current selected channel
+ - should also load in DMs
 
 # mvp
 

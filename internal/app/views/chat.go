@@ -95,7 +95,21 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 				return m, nil
 			}
 
-			// Arrow keys for focus cycling (when not in input mode)
+			// Vertical navigation (down/up) for messages <-> input
+			if m.focused == FocusMessages {
+				if m.keyMap.MatchesAction(msg, actions.ActionDown, actions.ScopeGlobal) {
+					m.setFocus(FocusInput)
+					return m, nil
+				}
+			}
+			if m.focused == FocusInput {
+				if m.keyMap.MatchesAction(msg, actions.ActionUp, actions.ScopeGlobal) {
+					m.setFocus(FocusMessages)
+					return m, nil
+				}
+			}
+
+			// Horizontal navigation (left/right) for sidebar <-> content
 			if m.focused != FocusInput {
 				if m.keyMap.MatchesAction(msg, actions.ActionRight, actions.ScopeGlobal) {
 					m.cycleFocusForward()
@@ -191,15 +205,19 @@ func (m *ChatModel) SetSize(width, height int) {
 	// Content area: box width minus borders (2 for left/right)
 	contentWidth := boxOuterWidth - 2
 
-	// Input: fixed height of 2 lines (minimal)
-	inputHeight := 2
+	// Input: fixed height of 6 lines content (to fill available space)
+	inputHeight := 6
+	// Input box total height: 6 (content) + 2 (borders) = 8
+	inputBoxTotalHeight := 8
 
-	// Messages: remaining height minus input, divider, and box border
-	// height - 2 (input) - 1 (divider) - 2 (box borders) = height - 5
-	messagesHeight := height - inputHeight - 3
+	// Messages box total height: remaining height after input box
+	messagesBoxTotalHeight := height - inputBoxTotalHeight
+	// Messages content height: total - borders
+	messagesHeight := messagesBoxTotalHeight - 2
 
 	// Set component sizes
-	m.sidebar.SetSize(sidebarWidth, height)
+	// Sidebar height accounts for borders (inner height = height - 2, total = height)
+	m.sidebar.SetSize(sidebarWidth, height-2)
 	m.messages.SetSize(contentWidth, messagesHeight)
 	m.input.SetSize(contentWidth, inputHeight)
 }
@@ -213,24 +231,22 @@ func (m ChatModel) View() string {
 	actualSidebarWidth := lipgloss.Width(sidebarView)
 
 	// Calculate box dimensions using actual sidebar width
-	// The remaining width after sidebar is the total space for the content box (including borders)
+	// The remaining width after sidebar is the total space for the content boxes (including borders)
 	remainingWidth := m.width - actualSidebarWidth
 	// contentWidth is the inner width (Box.Width sets inner content width in lipgloss)
 	contentWidth := remainingWidth - 2
 
-	// Create divider between messages and input
-	dividerLine := ""
-	for i := 0; i < contentWidth; i++ {
-		dividerLine += "─"
-	}
-	divider := styles.Border.Render(dividerLine)
+	// Input box total height: 6 (content) + 2 (borders) = 8
+	inputBoxTotalHeight := 8
+	// Messages box total height: remaining height after input box
+	messagesBoxTotalHeight := m.height - inputBoxTotalHeight
 
 	// Render messages view or empty state
 	messagesView := m.messages.View()
 	if m.selectedChannel == nil {
 		// Show empty state when no channel is selected
-		// Use same height calculation as messagesHeight: height - inputHeight - 3
-		emptyStateHeight := m.height - 2 - 3 // height - inputHeight - (divider + borders)
+		// Height should match messages content: messagesBoxTotalHeight - 2 (for borders)
+		emptyStateHeight := messagesBoxTotalHeight - 2
 		emptyState := lipgloss.NewStyle().
 			Width(contentWidth).
 			Height(emptyStateHeight).
@@ -239,32 +255,44 @@ func (m ChatModel) View() string {
 		messagesView = emptyState
 	}
 
-	// Wrap input view with fixed height to prevent flickering
-	// Input height is always 2 lines (matching inputHeight in SetSize)
-	inputView := lipgloss.NewStyle().
-		Height(2).
-		Render(m.input.View())
+	// Wrap messages in a bordered box with focus-aware styling
+	// Height() sets INNER content size, borders are added on top
+	// Inner height: messagesBoxTotalHeight - 2 = (height - 8) - 2 = height - 10
+	messagesBoxStyle := styles.Box.
+		Width(contentWidth).
+		Height(messagesBoxTotalHeight - 2) // Inner content height (borders added by lipgloss)
 
-	// Render messages and input (stacked vertically with divider)
-	messagesAndInput := lipgloss.JoinVertical(
-		lipgloss.Left,
-		messagesView,
-		divider,
-		inputView,
-	)
-
-	// Wrap content in a bordered box that matches sidebar height
-	// Change border color based on focus
-	boxStyle := styles.Box.
-		Width(contentWidth). // Inner content width (borders are added by lipgloss)
-		Height(m.height)     // Match sidebar height
-
-	// Highlight border when messages or input is focused
-	if m.focused == FocusMessages || m.focused == FocusInput {
-		boxStyle = boxStyle.BorderForeground(styles.ColourSuccess)
+	if m.focused == FocusMessages {
+		messagesBoxStyle = messagesBoxStyle.BorderForeground(styles.ColourSuccess)
 	}
 
-	contentView := boxStyle.Render(messagesAndInput)
+	messagesBoxView := messagesBoxStyle.Render(messagesView)
+
+	// Wrap input view with fixed height to prevent flickering
+	inputContentHeight := inputBoxTotalHeight - 2 // 8 - 2 = 6 lines
+	inputView := lipgloss.NewStyle().
+		Height(inputContentHeight).
+		Render(m.input.View())
+
+	// Wrap input in a bordered box with focus-aware styling
+	// Height() sets INNER content size, borders are added on top
+	// Inner height: 6 lines (total will be 6 + 2 borders = 8)
+	inputBoxStyle := styles.Box.
+		Width(contentWidth).
+		Height(inputContentHeight) // Inner content height (borders added by lipgloss)
+
+	if m.focused == FocusInput {
+		inputBoxStyle = inputBoxStyle.BorderForeground(styles.ColourSuccess)
+	}
+
+	inputBoxView := inputBoxStyle.Render(inputView)
+
+	// Stack the two boxes vertically - should now equal m.height total
+	contentView := lipgloss.JoinVertical(
+		lipgloss.Left,
+		messagesBoxView,
+		inputBoxView,
+	)
 
 	// Combine sidebar and content horizontally
 	fullView := lipgloss.JoinHorizontal(
