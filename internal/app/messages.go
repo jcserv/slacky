@@ -17,6 +17,7 @@ type (
 	authSuccessMsg struct {
 		teamName string
 		userName string
+		userID   string
 	}
 	channelsLoadedMsg struct {
 		channels []models.Channel
@@ -30,6 +31,13 @@ type (
 	}
 	messageSentMsg struct {
 		channelID string
+	}
+	activitiesLoadedMsg struct {
+		activities []models.Activity
+	}
+	activitySelectedMsg struct {
+		channelID string
+		threadTS  string // Optional: for thread replies
 	}
 )
 
@@ -58,6 +66,7 @@ func checkAuth(cfg *config.Config) tea.Cmd {
 		return authSuccessMsg{
 			teamName: authResp.Team,
 			userName: authResp.User,
+			userID:   authResp.UserID,
 		}
 	}
 }
@@ -74,7 +83,27 @@ func loadChannels(client *slackClient.Client) tea.Cmd {
 		// Convert Slack channels to our model
 		channels := make([]models.Channel, 0, len(slackChannels))
 		for _, sc := range slackChannels {
-			channels = append(channels, models.FromSlackChannel(sc))
+			ch := models.FromSlackChannel(sc)
+
+			// For DMs, fetch the user's name and check if it's a bot
+			if ch.Type == models.ChannelTypeDM && ch.UserID != "" {
+				user, err := client.GetUserInfo(ctx, ch.UserID)
+				if err == nil {
+					// Use real name if available, otherwise use display name
+					if user.RealName != "" {
+						ch.UserName = user.RealName
+					} else if user.Profile.DisplayName != "" {
+						ch.UserName = user.Profile.DisplayName
+					} else {
+						ch.UserName = user.Name
+					}
+					// Check if the user is a bot or app
+					// Special case: Slackbot has user ID "USLACKBOT"
+					ch.IsBot = user.IsBot || user.IsAppUser || user.ID == "USLACKBOT"
+				}
+			}
+
+			channels = append(channels, ch)
 		}
 
 		return channelsLoadedMsg{channels: channels}
@@ -143,5 +172,133 @@ func sendMessage(client *slackClient.Client, channelID, text string) tea.Cmd {
 		}
 
 		return messageSentMsg{channelID: channelID}
+	}
+}
+
+// loadActivities fetches user activities from Slack
+func loadActivities(client *slackClient.Client, userID string, channels []models.Channel) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		activities := []models.Activity{}
+
+		// Create channel lookup map for quick access
+		channelMap := make(map[string]models.Channel)
+		for _, ch := range channels {
+			channelMap[ch.ID] = ch
+		}
+
+		// 1. Get mentions
+		mentionQuery := fmt.Sprintf("@%s", userID)
+		mentionMessages, err := client.SearchMessages(ctx, mentionQuery, 50)
+		if err != nil {
+			return errMsg(fmt.Errorf("failed to load mentions: %w", err))
+		}
+		for _, msg := range mentionMessages {
+			// Convert search message to activity
+			ch, exists := channelMap[msg.Channel.ID]
+			timestamp := models.ParseSlackTimestampToTime(msg.Timestamp)
+
+			activity := models.Activity{
+				Type:        models.ActivityTypeMention,
+				ChannelID:   msg.Channel.ID,
+				ChannelName: msg.Channel.Name,
+				UserID:      msg.User,
+				UserName:    msg.Username,
+				MessageID:   msg.Timestamp,
+				MessageText: msg.Text,
+				Timestamp:   timestamp,
+				ThreadTS:    msg.Timestamp, // TODO: handle actual thread TS
+			}
+
+			if exists {
+				activity.ChannelType = ch.Type
+			}
+
+			activities = append(activities, activity)
+		}
+
+		// 2. Get reactions
+		reactionItems, err := client.GetUserReactions(ctx, 50)
+		if err != nil {
+			return errMsg(fmt.Errorf("failed to load reactions: %w", err))
+		}
+		for _, item := range reactionItems {
+			if item.Type == "message" && item.Message != nil {
+				ch, exists := channelMap[item.Channel]
+				timestamp := models.ParseSlackTimestampToTime(item.Message.Timestamp)
+
+				for _, reaction := range item.Message.Reactions {
+					activity := models.Activity{
+						Type:          models.ActivityTypeReaction,
+						ChannelID:     item.Channel,
+						ChannelName:   item.Channel,
+						UserID:        item.Message.User,
+						UserName:      item.Message.Username,
+						MessageID:     item.Message.Timestamp,
+						MessageText:   item.Message.Text,
+						Timestamp:     timestamp,
+						ReactionName:  reaction.Name,
+						ReactionCount: reaction.Count,
+					}
+
+					if exists {
+						activity.ChannelName = ch.Name
+						activity.ChannelType = ch.Type
+					}
+
+					activities = append(activities, activity)
+				}
+			}
+		}
+
+		// 3. Get unread DMs
+		unreadChannels, err := client.GetUnreadConversations(ctx)
+		if err != nil {
+			return errMsg(fmt.Errorf("failed to load unread DMs: %w", err))
+		}
+		for _, slackCh := range unreadChannels {
+			// Only include DMs, not channels
+			if !slackCh.IsIM && !slackCh.IsMpIM {
+				continue
+			}
+
+			ch := models.FromSlackChannel(slackCh)
+			if ch.Type == models.ChannelTypeDM && ch.UserID != "" {
+				user, err := client.GetUserInfo(ctx, ch.UserID)
+				if err == nil {
+					if user.RealName != "" {
+						ch.UserName = user.RealName
+					} else if user.Profile.DisplayName != "" {
+						ch.UserName = user.Profile.DisplayName
+					} else {
+						ch.UserName = user.Name
+					}
+				}
+			}
+
+			// Get the last message as a preview
+			messages, err := client.GetConversationHistory(ctx, ch.ID, 1)
+			if err == nil && len(messages) > 0 {
+				lastMsg := messages[0]
+				timestamp := models.ParseSlackTimestampToTime(lastMsg.Timestamp)
+
+				activity := models.Activity{
+					Type:        models.ActivityTypeUnreadDM,
+					ChannelID:   ch.ID,
+					ChannelName: ch.UserName,
+					ChannelType: ch.Type,
+					UserID:      lastMsg.User,
+					UserName:    ch.UserName,
+					MessageID:   lastMsg.Timestamp,
+					MessageText: lastMsg.Text,
+					Timestamp:   timestamp,
+				}
+
+				activities = append(activities, activity)
+			}
+		}
+
+		// TODO: Add thread replies (requires tracking user's thread participation)
+		return activitiesLoadedMsg{activities: activities}
 	}
 }

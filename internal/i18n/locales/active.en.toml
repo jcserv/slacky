@@ -293,6 +293,12 @@ other = "Starred"
 [chat.channels_section_title]
 other = "Channels"
 
+[chat.dms_section_title]
+other = "Direct Messages"
+
+[chat.apps_section_title]
+other = "Apps"
+
 [chat.select_channel]
 other = "Select a channel"
 
@@ -399,10 +405,35 @@ other = "Coming soon: User preferences, status, and account settings."
 
 # Activity View
 [activity.title]
-other = "📊 Activity View"
+other = "📊 Activity"
 
 [activity.subtitle]
-other = "This is where activity notifications will appear."
+other = "Recent activity and notifications"
 
-[activity.coming_soon]
-other = "Coming soon: Mentions, reactions, and thread updates."
+[activity.empty]
+other = "No activity yet. Mentions, reactions, and thread replies will appear here."
+
+[activity.empty_filter]
+other = "No activities match this filter."
+
+[activity.filter_all]
+other = "All"
+
+[activity.filter_mentions]
+other = "Mentions"
+
+[activity.filter_reactions]
+other = "Reactions"
+
+# Activity type labels
+[activity.type_mention]
+other = "Mention"
+
+[activity.type_reaction]
+other = "Reaction"
+
+[activity.type_unread_dm]
+other = "Unread DM"
+
+[activity.type_thread_reply]
+other = "Thread Reply"

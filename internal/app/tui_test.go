@@ -381,8 +381,9 @@ func TestTUIModelViewSwitching(t *testing.T) {
 
 		view := m.View()
 
-		if !strings.Contains(view, "Activity View") {
-			t.Error("Should display activity view content")
+		// Check for activity view filter status line
+		if !strings.Contains(view, "[All]") {
+			t.Error("Should display activity view content with filter status")
 		}
 	})
 

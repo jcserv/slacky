@@ -386,6 +386,17 @@ func (m ChatModel) GetChannels() []models.Channel {
 	return m.sidebar.GetChannels()
 }
 
+// SelectChannel selects a channel by ID in the sidebar
+func (m *ChatModel) SelectChannel(channelID string) {
+	m.sidebar.SelectChannel(channelID)
+	// Also update the selected channel
+	selectedCh := m.sidebar.GetSelectedChannel()
+	if selectedCh != nil {
+		m.selectedChannel = selectedCh
+		m.messages.SetChannel(selectedCh.ID, selectedCh.GetDisplayName())
+	}
+}
+
 // SetKeyMap sets the keybinding map for the chat view
 func (m *ChatModel) SetKeyMap(keyMap *keys.ScopedKeyMap) {
 	m.keyMap = keyMap

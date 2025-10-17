@@ -78,6 +78,13 @@ func parseSlackTimestamp(ts string) (time.Time, error) {
 	return time.Unix(seconds, 0), nil
 }
 
+// ParseSlackTimestampToTime is a public version of parseSlackTimestamp
+// for use by other packages
+func ParseSlackTimestampToTime(ts string) time.Time {
+	t, _ := parseSlackTimestamp(ts)
+	return t
+}
+
 // FormatTime returns a formatted timestamp for display
 func (m Message) FormatTime() string {
 	now := time.Now()
