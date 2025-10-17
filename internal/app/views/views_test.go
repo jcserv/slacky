@@ -5,8 +5,11 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
+	"github.com/jcserv/slacky/internal/models"
+	"github.com/jcserv/slacky/internal/tui/keys"
 )
 
 func init() {
@@ -275,4 +278,118 @@ func TestUserModelViewWithoutUserInfo(t *testing.T) {
 	if !strings.Contains(view, "User Information") {
 		t.Error("View should contain title even without user info")
 	}
+}
+
+// Test space key behavior in ChatModel
+func TestChatModelSpaceKeyWithNoChannel(t *testing.T) {
+	m := NewChatModel()
+
+	// Load keybindings
+	localizer := slackyI18n.NewLocalizer("en")
+	keyMap, err := loadTestKeyMap(localizer)
+	if err != nil {
+		t.Fatalf("Failed to load keybindings: %v", err)
+	}
+	m.SetKeyMap(keyMap)
+
+	// Start with focus on messages (not sidebar)
+	m.focused = FocusMessages
+
+	// Press space when no channel is selected
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = updatedModel
+
+	// Should focus sidebar
+	if m.focused != FocusSidebar {
+		t.Errorf("Expected focus to be on sidebar (FocusSidebar), got %v", m.focused)
+	}
+}
+
+func TestChatModelSpaceKeyWithChannel(t *testing.T) {
+	m := NewChatModel()
+
+	// Load keybindings
+	localizer := slackyI18n.NewLocalizer("en")
+	keyMap, err := loadTestKeyMap(localizer)
+	if err != nil {
+		t.Fatalf("Failed to load keybindings: %v", err)
+	}
+	m.SetKeyMap(keyMap)
+
+	// Set a selected channel
+	m.selectedChannel = &models.Channel{
+		ID:   "C123",
+		Name: "general",
+	}
+
+	// Start with focus on sidebar
+	m.focused = FocusSidebar
+
+	// Press space when channel is selected
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = updatedModel
+
+	// Should focus input
+	if m.focused != FocusInput {
+		t.Errorf("Expected focus to be on input (FocusInput), got %v", m.focused)
+	}
+}
+
+func TestChatModelSpaceKeyAlreadyOnSidebar(t *testing.T) {
+	m := NewChatModel()
+
+	// Load keybindings
+	localizer := slackyI18n.NewLocalizer("en")
+	keyMap, err := loadTestKeyMap(localizer)
+	if err != nil {
+		t.Fatalf("Failed to load keybindings: %v", err)
+	}
+	m.SetKeyMap(keyMap)
+
+	// No channel selected, already on sidebar
+	m.focused = FocusSidebar
+
+	// Press space - should still focus sidebar (to ensure highlighting)
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = updatedModel
+
+	// Should remain on sidebar
+	if m.focused != FocusSidebar {
+		t.Errorf("Expected focus to remain on sidebar (FocusSidebar), got %v", m.focused)
+	}
+}
+
+func TestChatModelSpaceKeyAlreadyOnInput(t *testing.T) {
+	m := NewChatModel()
+
+	// Load keybindings
+	localizer := slackyI18n.NewLocalizer("en")
+	keyMap, err := loadTestKeyMap(localizer)
+	if err != nil {
+		t.Fatalf("Failed to load keybindings: %v", err)
+	}
+	m.SetKeyMap(keyMap)
+
+	// Set a selected channel
+	m.selectedChannel = &models.Channel{
+		ID:   "C123",
+		Name: "general",
+	}
+
+	// Already on input
+	m.focused = FocusInput
+
+	// Press space - should not change focus (already on input)
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = updatedModel
+
+	// Should remain on input (space condition prevents changing when already on input)
+	if m.focused != FocusInput {
+		t.Errorf("Expected focus to remain on input (FocusInput), got %v", m.focused)
+	}
+}
+
+// Helper function to load keybindings for tests
+func loadTestKeyMap(localizer *i18n.Localizer) (*keys.ScopedKeyMap, error) {
+	return keys.LoadKeybindings(nil, localizer)
 }
