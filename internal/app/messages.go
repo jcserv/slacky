@@ -74,7 +74,27 @@ func loadChannels(client *slackClient.Client) tea.Cmd {
 		// Convert Slack channels to our model
 		channels := make([]models.Channel, 0, len(slackChannels))
 		for _, sc := range slackChannels {
-			channels = append(channels, models.FromSlackChannel(sc))
+			ch := models.FromSlackChannel(sc)
+
+			// For DMs, fetch the user's name and check if it's a bot
+			if ch.Type == models.ChannelTypeDM && ch.UserID != "" {
+				user, err := client.GetUserInfo(ctx, ch.UserID)
+				if err == nil {
+					// Use real name if available, otherwise use display name
+					if user.RealName != "" {
+						ch.UserName = user.RealName
+					} else if user.Profile.DisplayName != "" {
+						ch.UserName = user.Profile.DisplayName
+					} else {
+						ch.UserName = user.Name
+					}
+					// Check if the user is a bot or app
+					// Special case: Slackbot has user ID "USLACKBOT"
+					ch.IsBot = user.IsBot || user.IsAppUser || user.ID == "USLACKBOT"
+				}
+			}
+
+			channels = append(channels, ch)
 		}
 
 		return channelsLoadedMsg{channels: channels}

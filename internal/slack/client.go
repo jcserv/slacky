@@ -33,11 +33,11 @@ func (c *Client) TestAuth(ctx context.Context) (*slack.AuthTestResponse, error) 
 	return resp, nil
 }
 
-// GetChannels retrieves all channels the bot has access to
+// GetChannels retrieves all channels and DMs the user has access to
 func (c *Client) GetChannels(ctx context.Context) ([]slack.Channel, error) {
 	var allChannels []slack.Channel
 	params := &slack.GetConversationsParameters{
-		Types: []string{"public_channel", "private_channel"},
+		Types: []string{"public_channel", "private_channel", "im", "mpim"},
 		Limit: 100,
 	}
 

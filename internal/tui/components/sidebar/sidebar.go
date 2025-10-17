@@ -16,9 +16,11 @@ import (
 // Model represents the sidebar component
 type Model struct {
 	list      list.Model
-	channels  []models.Channel // All channels (combined starred + unstarred for indexing)
+	channels  []models.Channel // All channels (combined starred + unstarred + dms + apps for indexing)
 	starred   []models.Channel // Starred channels only
 	unstarred []models.Channel // Unstarred channels only
+	dms       []models.Channel // DMs only (human users)
+	apps      []models.Channel // Apps/bots only
 	width     int
 	height    int
 	focused   bool
@@ -34,7 +36,12 @@ type channelItem struct {
 
 func (i channelItem) Title() string {
 	icon := i.channel.GetIcon()
+
+	// Use UserName for DMs if available, otherwise use Name
 	name := i.channel.Name
+	if (i.channel.Type == models.ChannelTypeDM || i.channel.Type == models.ChannelTypeMPDM) && i.channel.UserName != "" {
+		name = i.channel.UserName
+	}
 
 	// Add indicator for unread messages
 	indicator := " "
@@ -91,6 +98,8 @@ func NewModel() Model {
 		channels:  []models.Channel{},
 		starred:   []models.Channel{},
 		unstarred: []models.Channel{},
+		dms:       []models.Channel{},
+		apps:      []models.Channel{},
 		width:     20,
 		height:    24,
 		focused:   false,
@@ -141,34 +150,42 @@ func (m Model) View() string {
 
 	var content string
 
-	// If we have starred channels, render sections with headers
-	if len(m.starred) > 0 {
+	// If we have starred channels, DMs, or apps, render sections with headers
+	if len(m.starred) > 0 || len(m.dms) > 0 || len(m.apps) > 0 {
 		starredTitle := styles.Subtitle.Render(m.localize("chat.starred_section_title", "Starred"))
 		channelsTitle := styles.Subtitle.Render(m.localize("chat.channels_section_title", "Channels"))
+		dmsTitle := styles.Subtitle.Render(m.localize("chat.dms_section_title", "Direct Messages"))
+		appsTitle := styles.Subtitle.Render(m.localize("chat.apps_section_title", "Apps"))
 
 		// Get current selection
 		selectedIdx := m.list.Index()
 
-		// Render starred items manually
-		var starredItems []string
-		for i, ch := range m.starred {
-			item := channelItem{channel: ch}
-			itemText := item.Title()
+		var parts []string
 
-			// Apply selected style if this is the selected item
-			if i == selectedIdx {
-				itemText = lipgloss.NewStyle().
-					Foreground(styles.ColourSuccess).
-					Bold(true).
-					Render(itemText)
-			} else {
-				itemText = styles.Label.Render(itemText)
+		// Render starred section if we have starred items
+		if len(m.starred) > 0 {
+			parts = append(parts, starredTitle)
+
+			for i, ch := range m.starred {
+				item := channelItem{channel: ch}
+				itemText := item.Title()
+
+				// Apply selected style if this is the selected item
+				if i == selectedIdx {
+					itemText = lipgloss.NewStyle().
+						Foreground(styles.ColourSuccess).
+						Bold(true).
+						Render(itemText)
+				} else {
+					itemText = styles.Label.Render(itemText)
+				}
+				parts = append(parts, itemText)
 			}
-			starredItems = append(starredItems, itemText)
 		}
 
-		// Render unstarred items manually
-		var unstarredItems []string
+		// Render channels section
+		parts = append(parts, channelsTitle)
+
 		for i, ch := range m.unstarred {
 			item := channelItem{channel: ch}
 			itemText := item.Title()
@@ -183,18 +200,56 @@ func (m Model) View() string {
 			} else {
 				itemText = styles.Label.Render(itemText)
 			}
-			unstarredItems = append(unstarredItems, itemText)
+			parts = append(parts, itemText)
 		}
 
-		// Combine everything (without divider)
-		parts := []string{starredTitle}
-		parts = append(parts, starredItems...)
-		parts = append(parts, channelsTitle)
-		parts = append(parts, unstarredItems...)
+		// Render DMs section if we have DMs
+		if len(m.dms) > 0 {
+			parts = append(parts, dmsTitle)
+
+			for i, ch := range m.dms {
+				item := channelItem{channel: ch}
+				itemText := item.Title()
+
+				// Apply selected style if this is the selected item
+				// Note: index offset by number of starred + unstarred items
+				if (i + len(m.starred) + len(m.unstarred)) == selectedIdx {
+					itemText = lipgloss.NewStyle().
+						Foreground(styles.ColourSuccess).
+						Bold(true).
+						Render(itemText)
+				} else {
+					itemText = styles.Label.Render(itemText)
+				}
+				parts = append(parts, itemText)
+			}
+		}
+
+		// Render Apps section if we have apps
+		if len(m.apps) > 0 {
+			parts = append(parts, appsTitle)
+
+			for i, ch := range m.apps {
+				item := channelItem{channel: ch}
+				itemText := item.Title()
+
+				// Apply selected style if this is the selected item
+				// Note: index offset by number of starred + unstarred + dms items
+				if (i + len(m.starred) + len(m.unstarred) + len(m.dms)) == selectedIdx {
+					itemText = lipgloss.NewStyle().
+						Foreground(styles.ColourSuccess).
+						Bold(true).
+						Render(itemText)
+				} else {
+					itemText = styles.Label.Render(itemText)
+				}
+				parts = append(parts, itemText)
+			}
+		}
 
 		content = lipgloss.JoinVertical(lipgloss.Left, parts...)
 	} else {
-		// No starred channels, just render regular title
+		// No starred channels, DMs, or apps, just render regular title
 		title := styles.Subtitle.Render(m.localize("chat.sidebar_title", "Channels"))
 		content = title + m.list.View()
 	}
@@ -221,24 +276,41 @@ func (m *Model) SetSize(width, height int) {
 	m.list.SetSize(listWidth, listHeight)
 }
 
-// SetChannels sets the list of channels, splitting them into starred and unstarred
+// SetChannels sets the list of channels, splitting them into starred, unstarred, DMs, and apps
 func (m *Model) SetChannels(channels []models.Channel) {
-	// Split channels into starred and unstarred
+	// Split channels into starred, unstarred regular channels, DMs, and apps
 	m.starred = []models.Channel{}
 	m.unstarred = []models.Channel{}
+	m.dms = []models.Channel{}
+	m.apps = []models.Channel{}
 
 	for _, ch := range channels {
-		if ch.IsStarred {
-			m.starred = append(m.starred, ch)
+		// Check if it's a DM or MPDM first
+		if ch.Type == models.ChannelTypeDM || ch.Type == models.ChannelTypeMPDM {
+			if ch.IsStarred {
+				m.starred = append(m.starred, ch)
+			} else if ch.IsBot {
+				// Separate bots/apps from regular DMs
+				m.apps = append(m.apps, ch)
+			} else {
+				m.dms = append(m.dms, ch)
+			}
 		} else {
-			m.unstarred = append(m.unstarred, ch)
+			// Regular channel or private channel
+			if ch.IsStarred {
+				m.starred = append(m.starred, ch)
+			} else {
+				m.unstarred = append(m.unstarred, ch)
+			}
 		}
 	}
 
-	// Combine for the full list: starred first, then unstarred
+	// Combine for the full list: starred first, then unstarred channels, then DMs, then apps
 	m.channels = make([]models.Channel, 0, len(channels))
 	m.channels = append(m.channels, m.starred...)
 	m.channels = append(m.channels, m.unstarred...)
+	m.channels = append(m.channels, m.dms...)
+	m.channels = append(m.channels, m.apps...)
 
 	// Convert channels to list items
 	items := make([]list.Item, len(m.channels))

@@ -30,12 +30,18 @@ type Channel struct {
 	// For DMs
 	UserID   string // User ID for DMs
 	UserName string // User name for DMs
+	IsBot    bool   // Whether this DM is with a bot/app
 }
 
 // FromSlackChannel converts a slack.Channel to our Channel model
 func FromSlackChannel(sc slack.Channel) Channel {
+	// Determine channel type
 	channelType := ChannelTypePublic
-	if sc.IsPrivate {
+	if sc.IsIM {
+		channelType = ChannelTypeDM
+	} else if sc.IsMpIM {
+		channelType = ChannelTypeMPDM
+	} else if sc.IsPrivate {
 		channelType = ChannelTypePrivate
 	}
 
@@ -47,6 +53,7 @@ func FromSlackChannel(sc slack.Channel) Channel {
 		Purpose:    sc.Purpose.Value,
 		IsMember:   sc.IsMember,
 		IsArchived: sc.IsArchived,
+		UserID:     sc.User, // For DMs, this is the other user's ID
 	}
 }
 
@@ -55,7 +62,7 @@ func (c Channel) GetDisplayName() string {
 	switch c.Type {
 	case ChannelTypeDM:
 		if c.UserName != "" {
-			return c.UserName
+			return "@" + c.UserName
 		}
 		return c.Name
 	case ChannelTypeMPDM:

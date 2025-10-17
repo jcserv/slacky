@@ -293,6 +293,12 @@ other = "Starred"
 [chat.channels_section_title]
 other = "Channels"
 
+[chat.dms_section_title]
+other = "Direct Messages"
+
+[chat.apps_section_title]
+other = "Apps"
+
 [chat.select_channel]
 other = "Select a channel"
 
