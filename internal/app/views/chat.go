@@ -89,10 +89,17 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 	case tea.KeyMsg:
 		// Handle focus switching with keyMap if available
 		if m.keyMap != nil {
-			// Space key: jump to input
-			if m.keyMap.MatchesAction(msg, actions.ActionBeginInput, actions.ScopeChat) && m.focused != FocusInput {
-				m.setFocus(FocusInput)
-				return m, nil
+			// Space key: jump to input if channel selected, otherwise focus sidebar
+			if m.keyMap.MatchesAction(msg, actions.ActionBeginInput, actions.ScopeChat) {
+				if m.selectedChannel != nil && m.focused != FocusInput {
+					// Channel selected: jump to input
+					m.setFocus(FocusInput)
+					return m, nil
+				} else if m.selectedChannel == nil {
+					// No channel selected: focus sidebar (always ensure it's highlighted)
+					m.setFocus(FocusSidebar)
+					return m, nil
+				}
 			}
 
 			// Vertical navigation (down/up) for messages <-> input
