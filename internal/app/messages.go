@@ -21,6 +21,9 @@ type (
 	channelsLoadedMsg struct {
 		channels []models.Channel
 	}
+	starredConversationsLoadedMsg struct {
+		starredIDs []string
+	}
 	messagesLoadedMsg struct {
 		channelID string
 		messages  []models.Message
@@ -114,6 +117,19 @@ func loadMessages(client *slackClient.Client, channelID string, limit int) tea.C
 			channelID: channelID,
 			messages:  messages,
 		}
+	}
+}
+
+// loadStarredConversations fetches starred conversation IDs from Slack
+func loadStarredConversations(client *slackClient.Client) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		starredIDs, err := client.GetStarredConversations(ctx)
+		if err != nil {
+			return errMsg(fmt.Errorf("failed to load starred conversations: %w", err))
+		}
+
+		return starredConversationsLoadedMsg{starredIDs: starredIDs}
 	}
 }
 

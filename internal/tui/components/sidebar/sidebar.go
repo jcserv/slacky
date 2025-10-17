@@ -15,11 +15,13 @@ import (
 
 // Model represents the sidebar component
 type Model struct {
-	list     list.Model
-	channels []models.Channel
-	width    int
-	height   int
-	focused  bool
+	list      list.Model
+	channels  []models.Channel // All channels (combined starred + unstarred for indexing)
+	starred   []models.Channel // Starred channels only
+	unstarred []models.Channel // Unstarred channels only
+	width     int
+	height    int
+	focused   bool
 
 	// i18n
 	localizer *i18n.Localizer
@@ -87,6 +89,8 @@ func NewModel() Model {
 	return Model{
 		list:      l,
 		channels:  []models.Channel{},
+		starred:   []models.Channel{},
+		unstarred: []models.Channel{},
 		width:     20,
 		height:    24,
 		focused:   false,
@@ -135,12 +139,65 @@ func (m Model) View() string {
 		borderStyle = borderStyle.BorderForeground(styles.ColourSuccess)
 	}
 
-	// Render list with title (no spacing)
-	title := styles.Subtitle.Render(m.localize("chat.sidebar_title", "Channels"))
-	listView := m.list.View()
+	var content string
 
-	// Concatenate title and list directly (no newline)
-	content := title + listView
+	// If we have starred channels, render sections with headers
+	if len(m.starred) > 0 {
+		starredTitle := styles.Subtitle.Render(m.localize("chat.starred_section_title", "Starred"))
+		channelsTitle := styles.Subtitle.Render(m.localize("chat.channels_section_title", "Channels"))
+
+		// Get current selection
+		selectedIdx := m.list.Index()
+
+		// Render starred items manually
+		var starredItems []string
+		for i, ch := range m.starred {
+			item := channelItem{channel: ch}
+			itemText := item.Title()
+
+			// Apply selected style if this is the selected item
+			if i == selectedIdx {
+				itemText = lipgloss.NewStyle().
+					Foreground(styles.ColourSuccess).
+					Bold(true).
+					Render(itemText)
+			} else {
+				itemText = styles.Label.Render(itemText)
+			}
+			starredItems = append(starredItems, itemText)
+		}
+
+		// Render unstarred items manually
+		var unstarredItems []string
+		for i, ch := range m.unstarred {
+			item := channelItem{channel: ch}
+			itemText := item.Title()
+
+			// Apply selected style if this is the selected item
+			// Note: index offset by number of starred items
+			if (i + len(m.starred)) == selectedIdx {
+				itemText = lipgloss.NewStyle().
+					Foreground(styles.ColourSuccess).
+					Bold(true).
+					Render(itemText)
+			} else {
+				itemText = styles.Label.Render(itemText)
+			}
+			unstarredItems = append(unstarredItems, itemText)
+		}
+
+		// Combine everything (without divider)
+		parts := []string{starredTitle}
+		parts = append(parts, starredItems...)
+		parts = append(parts, channelsTitle)
+		parts = append(parts, unstarredItems...)
+
+		content = lipgloss.JoinVertical(lipgloss.Left, parts...)
+	} else {
+		// No starred channels, just render regular title
+		title := styles.Subtitle.Render(m.localize("chat.sidebar_title", "Channels"))
+		content = title + m.list.View()
+	}
 
 	return borderStyle.Render(content)
 }
@@ -164,13 +221,28 @@ func (m *Model) SetSize(width, height int) {
 	m.list.SetSize(listWidth, listHeight)
 }
 
-// SetChannels sets the list of channels
+// SetChannels sets the list of channels, splitting them into starred and unstarred
 func (m *Model) SetChannels(channels []models.Channel) {
-	m.channels = channels
+	// Split channels into starred and unstarred
+	m.starred = []models.Channel{}
+	m.unstarred = []models.Channel{}
+
+	for _, ch := range channels {
+		if ch.IsStarred {
+			m.starred = append(m.starred, ch)
+		} else {
+			m.unstarred = append(m.unstarred, ch)
+		}
+	}
+
+	// Combine for the full list: starred first, then unstarred
+	m.channels = make([]models.Channel, 0, len(channels))
+	m.channels = append(m.channels, m.starred...)
+	m.channels = append(m.channels, m.unstarred...)
 
 	// Convert channels to list items
-	items := make([]list.Item, len(channels))
-	for i, ch := range channels {
+	items := make([]list.Item, len(m.channels))
+	for i, ch := range m.channels {
 		items[i] = channelItem{channel: ch}
 	}
 
@@ -189,6 +261,11 @@ func (m Model) GetSelectedChannel() *models.Channel {
 	}
 
 	return &m.channels[selectedIdx]
+}
+
+// GetChannels returns all channels
+func (m Model) GetChannels() []models.Channel {
+	return m.channels
 }
 
 // SetFocused sets the focus state of the sidebar

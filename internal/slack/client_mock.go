@@ -22,6 +22,12 @@ type MockClient struct {
 	// SendMessageFunc allows tests to control the response of SendMessage
 	SendMessageFunc func(ctx context.Context, channelID, text string) error
 
+	// GetUserInfoFunc allows tests to control the response of GetUserInfo
+	GetUserInfoFunc func(ctx context.Context, userID string) (*slack.User, error)
+
+	// ListAllStarsFunc allows tests to control the response of ListAllStars
+	ListAllStarsFunc func(ctx context.Context) ([]slack.Item, error)
+
 	// EventsChannel is used to simulate Socket Mode events
 	EventsChannel chan socketmode.Event
 
@@ -134,4 +140,49 @@ func (m *MockClient) API() *slack.Client {
 // Socket returns nil for the mock (not used in tests)
 func (m *MockClient) Socket() *socketmode.Client {
 	return nil
+}
+
+// HasSocketMode returns false for the mock
+func (m *MockClient) HasSocketMode() bool {
+	return false
+}
+
+// GetUserInfo implements the Client interface
+func (m *MockClient) GetUserInfo(ctx context.Context, userID string) (*slack.User, error) {
+	if m.GetUserInfoFunc != nil {
+		return m.GetUserInfoFunc(ctx, userID)
+	}
+	return nil, errors.New("GetUserInfoFunc not set")
+}
+
+// GetStarredConversations implements the Client interface
+func (m *MockClient) GetStarredConversations(ctx context.Context) ([]string, error) {
+	if m.ListAllStarsFunc == nil {
+		return nil, errors.New("ListAllStarsFunc not set")
+	}
+
+	items, err := m.ListAllStarsFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use a map to deduplicate channel IDs
+	starredChannelSet := make(map[string]bool)
+	for _, item := range items {
+		// Only include direct conversation stars (not messages within channels)
+		switch item.Type {
+		case slack.TYPE_CHANNEL, slack.TYPE_IM, slack.TYPE_GROUP:
+			if item.Channel != "" {
+				starredChannelSet[item.Channel] = true
+			}
+		}
+	}
+
+	// Convert set to slice
+	starredChannelIDs := make([]string, 0, len(starredChannelSet))
+	for channelID := range starredChannelSet {
+		starredChannelIDs = append(starredChannelIDs, channelID)
+	}
+
+	return starredChannelIDs, nil
 }

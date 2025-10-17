@@ -381,6 +381,11 @@ func (m ChatModel) GetSelectedChannel() *models.Channel {
 	return m.selectedChannel
 }
 
+// GetChannels returns all channels from the sidebar
+func (m ChatModel) GetChannels() []models.Channel {
+	return m.sidebar.GetChannels()
+}
+
 // SetKeyMap sets the keybinding map for the chat view
 func (m *ChatModel) SetKeyMap(keyMap *keys.ScopedKeyMap) {
 	m.keyMap = keyMap

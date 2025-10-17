@@ -287,6 +287,12 @@ other = "Disconnected"
 [chat.sidebar_title]
 other = "Channels"
 
+[chat.starred_section_title]
+other = "Starred"
+
+[chat.channels_section_title]
+other = "Channels"
+
 [chat.select_channel]
 other = "Select a channel"
 

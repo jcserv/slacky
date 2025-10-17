@@ -95,3 +95,21 @@ func (c Channel) GetDescription() string {
 	}
 	return ""
 }
+
+// MarkAsStarred updates a slice of channels to mark the specified channel IDs as starred
+func MarkAsStarred(channels []Channel, starredIDs []string) []Channel {
+	// Create a set of starred IDs for O(1) lookup
+	starredSet := make(map[string]bool)
+	for _, id := range starredIDs {
+		starredSet[id] = true
+	}
+
+	// Update channels
+	updatedChannels := make([]Channel, len(channels))
+	for i, ch := range channels {
+		ch.IsStarred = starredSet[ch.ID]
+		updatedChannels[i] = ch
+	}
+
+	return updatedChannels
+}

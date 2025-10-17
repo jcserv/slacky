@@ -167,6 +167,7 @@ func (m Model) runOAuthFlow() tea.Cmd {
 			"mpim:history",
 			"mpim:read",
 			"mpim:write",
+			"stars:read",
 			"users:read",
 		}
 

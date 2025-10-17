@@ -19,7 +19,9 @@
         "mpim:history",
         "mpim:read",
         "mpim:write",
-        "users:read"
+        "users:read",
+        "stars:read",
+        "stars:write"
       ]
     }
   },

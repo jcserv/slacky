@@ -123,3 +123,32 @@ func (c *Client) GetUserInfo(ctx context.Context, userID string) (*slack.User, e
 	}
 	return user, nil
 }
+
+// GetStarredConversations retrieves channel IDs for all starred conversations (channels, DMs, groups)
+func (c *Client) GetStarredConversations(ctx context.Context) ([]string, error) {
+	items, err := c.api.ListAllStarsContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get starred items: %w", err)
+	}
+
+	// Use a map to deduplicate channel IDs
+	starredChannelSet := make(map[string]bool)
+	for _, item := range items {
+		// Only include direct conversation stars (not messages within channels)
+		// This ensures we only show channels that are explicitly starred
+		switch item.Type {
+		case slack.TYPE_CHANNEL, slack.TYPE_IM, slack.TYPE_GROUP:
+			if item.Channel != "" {
+				starredChannelSet[item.Channel] = true
+			}
+		}
+	}
+
+	// Convert set to slice
+	starredChannelIDs := make([]string, 0, len(starredChannelSet))
+	for channelID := range starredChannelSet {
+		starredChannelIDs = append(starredChannelIDs, channelID)
+	}
+
+	return starredChannelIDs, nil
+}

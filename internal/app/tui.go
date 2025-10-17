@@ -11,6 +11,7 @@ import (
 
 	"github.com/jcserv/slacky/internal/app/views"
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
+	"github.com/jcserv/slacky/internal/models"
 	"github.com/jcserv/slacky/internal/tui"
 	"github.com/jcserv/slacky/internal/tui/actions"
 	"github.com/jcserv/slacky/internal/tui/components/statusbar"
@@ -170,6 +171,14 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case channelsLoadedMsg:
 		// Set channels in the chat view
 		m.chatView.SetChannels(msg.channels)
+		// Load starred conversations after channels are loaded
+		return m, loadStarredConversations(m.app.SlackClient)
+
+	case starredConversationsLoadedMsg:
+		// Mark channels as starred and update the chat view
+		currentChannels := m.chatView.GetChannels()
+		updatedChannels := models.MarkAsStarred(currentChannels, msg.starredIDs)
+		m.chatView.SetChannels(updatedChannels)
 		return m, nil
 
 	case messagesLoadedMsg:
