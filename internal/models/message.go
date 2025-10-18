@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jcserv/slacky/internal/util"
 	"github.com/slack-go/slack"
 )
 
@@ -111,7 +112,7 @@ func (m Message) FormatTime() string {
 // GetDisplayText returns the formatted text for display
 func (m Message) GetDisplayText() string {
 	// TODO: Handle Slack markdown formatting, user mentions, etc.
-	return m.Text
+	return util.ConvertEmojiInText(m.Text)
 }
 
 // IsThreadReply returns true if this message is a reply in a thread
