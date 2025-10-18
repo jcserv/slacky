@@ -16,7 +16,19 @@ import (
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
-// FocusedComponent represents which component is currently focused
+// FocusedComponent represents which component is currently focused.
+//
+// Navigation flow within chat view:
+// 1. FocusSidebar: Channel list (entry point when view is entered)
+// 2. FocusMessages: Main message area for selected channel
+// 3. FocusThread: Thread reply view (activated by pressing Enter on threaded message)
+// 4. FocusInput: Message input field
+//
+// Transitions:
+// - Tab: Cycles forward through components (Sidebar → Messages → Input → Sidebar)
+// - Shift+Tab: Cycles backward
+// - Enter on threaded message: Opens thread view (FocusMessages → FocusThread)
+// - Escape in thread: Closes thread view (FocusThread → FocusMessages)
 type FocusedComponent int
 
 const (

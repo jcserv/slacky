@@ -73,9 +73,11 @@ func parseSlackTimestamp(ts string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("invalid timestamp format")
 	}
 
-	// Parse the seconds part
 	var seconds int64
-	_, _ = fmt.Sscanf(parts[0], "%d", &seconds)
+	n, err := fmt.Sscanf(parts[0], "%d", &seconds)
+	if err != nil || n != 1 {
+		return time.Time{}, fmt.Errorf("failed to parse timestamp: %w", err)
+	}
 
 	return time.Unix(seconds, 0), nil
 }

@@ -8,10 +8,10 @@ import (
 
 // PollingConfig holds configuration for different polling intervals
 type PollingConfig struct {
-	CurrentChannelInterval time.Duration // How often to poll the current channel for new messages
-	SidebarInterval        time.Duration // How often to poll for sidebar unread counts
-	ActivityInterval       time.Duration // How often to poll for new activities
-	Enabled                bool          // Whether polling is enabled
+	CurrentChannelInterval time.Duration
+	SidebarInterval        time.Duration
+	ActivityInterval       time.Duration
+	Enabled                bool
 }
 
 // DefaultPollingConfig returns the default polling configuration

@@ -12,6 +12,7 @@ import (
 
 	"github.com/jcserv/slacky/internal/app/views"
 	"github.com/jcserv/slacky/internal/config"
+	"github.com/jcserv/slacky/internal/constants"
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/models"
 	"github.com/jcserv/slacky/internal/tui"
@@ -22,12 +23,14 @@ import (
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
-// FocusLevel represents whether the user is navigating at tab level or inside a view
+// FocusLevel represents whether the user is navigating at tab level or inside a view.
+// FocusLevelTab allows switching tabs with Tab key, while FocusLevelView
+// allows Tab to cycle through elements within the active view.
 type FocusLevel int
 
 const (
-	FocusLevelTab  FocusLevel = iota // User is at tab level (can switch tabs with Tab key)
-	FocusLevelView                   // User is inside a view (Tab cycles through view elements)
+	FocusLevelTab FocusLevel = iota
+	FocusLevelView
 )
 
 // TUIModel holds the main application state
@@ -48,10 +51,10 @@ type TUIModel struct {
 	authSuccess  bool
 	teamName     string
 	userName     string
-	userID       string // Slack user ID for activity fetching
+	userID       string
 	localizer    *i18n.Localizer
 	showHelp     bool
-	focusLevel   FocusLevel // Current focus level (tab or view)
+	focusLevel   FocusLevel
 
 	// Polling state
 	pollingConfig    PollingConfig
@@ -128,16 +131,11 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		// Update component sizes
 		m.tabs.SetWidth(msg.Width)
 		m.statusBar.SetWidth(msg.Width)
 
-		// Calculate content height (total - tabs - status bar - borders - newlines)
-		// Tabs: 2 lines (content + bottom border)
-		// Status bar: 2 lines (top border + content)
-		// Newlines: 2 lines (after tabs, before status bar)
-		// Total: 6 lines
-		contentHeight := msg.Height - 6
+		// Content height accounts for tabs (2 lines), status bar (2 lines), and spacing (2 lines)
+		contentHeight := msg.Height - constants.UIHeaderHeight
 
 		m.chatView.SetSize(msg.Width, contentHeight)
 		m.activityView.SetSize(msg.Width, contentHeight)
@@ -146,23 +144,28 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		// Handle quit (always available)
 		if m.keyMap.MatchesAction(msg, actions.ActionQuit, actions.ScopeGlobal) {
 			m.quitting = true
 			return m, tea.Quit
 		}
 
-		// Handle help toggle (always available)
 		if m.keyMap.MatchesAction(msg, actions.ActionToggleHelp, actions.ScopeGlobal) {
 			m.showHelp = !m.showHelp
 			return m, nil
 		}
 
-		// Only handle other actions after auth success
+		// Focus management: Two-level navigation system
+		// 1. Tab level (FocusLevelTab): Navigate between tabs (Chat, Activity, User)
+		// 2. View level (FocusLevelView): Navigate within the active view
+		//
+		// User flow:
+		// - Start at tab level, use Tab/Shift+Tab to switch tabs
+		// - Press Space to enter current view (FocusLevelView)
+		// - Press Escape to exit back to tab level
+		// - Special case: Chat view has nested navigation (sidebar → messages → threads)
+		//   so Escape only exits to tab level when sidebar is focused
 		if m.authSuccess {
-			// Handle navigation based on focus level
 			if m.focusLevel == FocusLevelTab {
-				// Tab level navigation
 				if m.keyMap.MatchesAction(msg, actions.ActionNextTab, actions.ScopeGlobal) {
 					m.tabs.NextTab()
 					return m, nil
@@ -172,14 +175,12 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				// Space: Enter the current view
 				if m.keyMap.MatchesAction(msg, actions.ActionEnterView, actions.ScopeGlobal) {
 					m.focusLevel = FocusLevelView
 					m.enterCurrentView()
 					return m, nil
 				}
 
-				// Number keys for direct tab navigation (if enabled in config)
 				if m.keyMap.MatchesAction(msg, actions.ActionGoToChat, actions.ScopeGlobal) {
 					m.tabs.SetCurrentTab(tabs.ChatTab)
 					return m, nil
@@ -193,28 +194,21 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			} else {
-				// View level navigation
-				// Esc: Exit view and return to tab level
-				// BUT: Don't intercept escape for chat view unless sidebar is focused
+				// In chat view, only exit to tab level when sidebar is focused.
+				// This allows Escape to be used for exiting threads first.
 				if m.keyMap.MatchesAction(msg, actions.ActionExitView, actions.ScopeGlobal) {
-					// Check if we're in chat view
 					if m.tabs.GetCurrentTab() == tabs.ChatTab {
-						// Only exit view if sidebar is focused
-						// Otherwise, let the chat view handle it (e.g., exit thread, or do nothing)
 						if m.chatView.IsSidebarFocused() {
 							m.focusLevel = FocusLevelTab
 							m.exitCurrentView()
 							return m, nil
 						}
-						// Let chat view handle the escape key
 					} else {
-						// For other views (Activity, User), exit view normally
 						m.focusLevel = FocusLevelTab
 						m.exitCurrentView()
 						return m, nil
 					}
 				}
-				// All other keys fall through to the active view
 			}
 		}
 

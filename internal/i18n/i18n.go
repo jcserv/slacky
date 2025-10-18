@@ -40,12 +40,16 @@ func Init() error {
 	return nil
 }
 
-// NewLocalizer creates a new localizer for the given language preferences
-// It accepts language tags in order of preference (e.g., "es", "en")
-// If no languages are provided, it defaults to English
+// NewLocalizer creates a new localizer for the given language preferences.
+// It accepts language tags in order of preference (e.g., "es", "en").
+// If no languages are provided, it defaults to English.
+//
+// This function panics if the i18n bundle is not initialized. Since i18n.Init()
+// is called at application startup (in main.go), this panic indicates a programming
+// error rather than a runtime condition. Use this in model initialization where
+// Init() has already been called.
 func NewLocalizer(langs ...string) *i18n.Localizer {
 	if bundle == nil {
-		// If bundle is not initialized, panic as this is a programming error
 		panic("i18n bundle not initialized - call i18n.Init() first")
 	}
 

@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -184,19 +185,12 @@ func FilterActivities(activities []Activity, filter ActivityFilter) []Activity {
 
 // SortActivitiesByTime sorts activities by timestamp (most recent first)
 func SortActivitiesByTime(activities []Activity) []Activity {
-	// Create a copy to avoid modifying the original
 	sorted := make([]Activity, len(activities))
 	copy(sorted, activities)
 
-	// Simple bubble sort (good enough for small lists)
-	// For larger lists, consider using sort.Slice
-	for i := 0; i < len(sorted); i++ {
-		for j := i + 1; j < len(sorted); j++ {
-			if sorted[j].Timestamp.After(sorted[i].Timestamp) {
-				sorted[i], sorted[j] = sorted[j], sorted[i]
-			}
-		}
-	}
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return sorted[i].Timestamp.After(sorted[j].Timestamp)
+	})
 
 	return sorted
 }

@@ -3,9 +3,9 @@ package styles
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	Primary     = lipgloss.Color("#82aaff") // Title, primary actions
-	Secondary   = lipgloss.Color("#5c8fa6") // Secondary elements
-	Tertiary    = lipgloss.Color("#d07e60") // Additional elements
+	Primary     = lipgloss.Color("#82aaff")
+	Secondary   = lipgloss.Color("#5c8fa6")
+	Tertiary    = lipgloss.Color("#d07e60")
 	Quarternary = lipgloss.Color("#c099ff")
 
 	ColourSuccess = lipgloss.Color("#86e1b3")
@@ -13,8 +13,7 @@ var (
 	ColourInfo    = lipgloss.Color("#82aaff")
 	ColourWarning = lipgloss.Color("#d07e60")
 
-	// grayscale
-	ColourForeground = lipgloss.Color("#ffffff") // #c8d3f5
+	ColourForeground = lipgloss.Color("#ffffff")
 	ColourBackground = lipgloss.Color("#222436")
 	ColourDim        = lipgloss.Color("#828bb8")
 	ColourSubtle     = lipgloss.Color("#444a73")
@@ -70,7 +69,6 @@ var (
 		Bold(true).
 		Foreground(Primary)
 
-	// Tabs
 	Tab = lipgloss.NewStyle().
 		Foreground(ColourDim).
 		Padding(0, 2)
@@ -89,7 +87,6 @@ var (
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(ColourSubtle)
 
-	// Status Bar
 	StatusBar = lipgloss.NewStyle().
 			Foreground(ColourForeground).
 			Background(ColourSubtle).
