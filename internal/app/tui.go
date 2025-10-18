@@ -22,6 +22,14 @@ import (
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
 
+// FocusLevel represents whether the user is navigating at tab level or inside a view
+type FocusLevel int
+
+const (
+	FocusLevelTab  FocusLevel = iota // User is at tab level (can switch tabs with Tab key)
+	FocusLevelView                   // User is inside a view (Tab cycles through view elements)
+)
+
 // TUIModel holds the main application state
 type TUIModel struct {
 	app          *App
@@ -43,6 +51,7 @@ type TUIModel struct {
 	userID       string // Slack user ID for activity fetching
 	localizer    *i18n.Localizer
 	showHelp     bool
+	focusLevel   FocusLevel // Current focus level (tab or view)
 
 	// Polling state
 	pollingConfig    PollingConfig
@@ -88,7 +97,8 @@ func (app *App) NewTUI() TUIModel {
 		userView:      views.NewUserModel(),
 		version:       "v0.1.0-dev",
 		localizer:     localizer,
-		showHelp:      true, // Show help by default for new users
+		showHelp:      true,          // Show help by default for new users
+		focusLevel:    FocusLevelTab, // Start at tab level
 		pollingConfig: pollingConfig,
 		lastMessageTS: make(map[string]string),
 	}
@@ -150,33 +160,61 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Only handle other actions after auth success
 		if m.authSuccess {
-			// Handle tab navigation
-			if m.keyMap.MatchesAction(msg, actions.ActionNextTab, actions.ScopeGlobal) {
-				m.tabs.NextTab()
-				m.updateViewFocus()
-				return m, nil
-			}
-			if m.keyMap.MatchesAction(msg, actions.ActionPrevTab, actions.ScopeGlobal) {
-				m.tabs.PrevTab()
-				m.updateViewFocus()
-				return m, nil
-			}
+			// Handle navigation based on focus level
+			if m.focusLevel == FocusLevelTab {
+				// Tab level navigation
+				if m.keyMap.MatchesAction(msg, actions.ActionNextTab, actions.ScopeGlobal) {
+					m.tabs.NextTab()
+					return m, nil
+				}
+				if m.keyMap.MatchesAction(msg, actions.ActionPrevTab, actions.ScopeGlobal) {
+					m.tabs.PrevTab()
+					return m, nil
+				}
 
-			// Handle direct view navigation
-			if m.keyMap.MatchesAction(msg, actions.ActionGoToChat, actions.ScopeGlobal) {
-				m.tabs.SetCurrentTab(tabs.ChatTab)
-				m.updateViewFocus()
-				return m, nil
-			}
-			if m.keyMap.MatchesAction(msg, actions.ActionGoToActivity, actions.ScopeGlobal) {
-				m.tabs.SetCurrentTab(tabs.ActivityTab)
-				m.updateViewFocus()
-				return m, nil
-			}
-			if m.keyMap.MatchesAction(msg, actions.ActionGoToUser, actions.ScopeGlobal) {
-				m.tabs.SetCurrentTab(tabs.UserTab)
-				m.updateViewFocus()
-				return m, nil
+				// Space: Enter the current view
+				if m.keyMap.MatchesAction(msg, actions.ActionEnterView, actions.ScopeGlobal) {
+					m.focusLevel = FocusLevelView
+					m.enterCurrentView()
+					return m, nil
+				}
+
+				// Number keys for direct tab navigation (if enabled in config)
+				if m.keyMap.MatchesAction(msg, actions.ActionGoToChat, actions.ScopeGlobal) {
+					m.tabs.SetCurrentTab(tabs.ChatTab)
+					return m, nil
+				}
+				if m.keyMap.MatchesAction(msg, actions.ActionGoToActivity, actions.ScopeGlobal) {
+					m.tabs.SetCurrentTab(tabs.ActivityTab)
+					return m, nil
+				}
+				if m.keyMap.MatchesAction(msg, actions.ActionGoToUser, actions.ScopeGlobal) {
+					m.tabs.SetCurrentTab(tabs.UserTab)
+					return m, nil
+				}
+			} else {
+				// View level navigation
+				// Esc: Exit view and return to tab level
+				// BUT: Don't intercept escape for chat view unless sidebar is focused
+				if m.keyMap.MatchesAction(msg, actions.ActionExitView, actions.ScopeGlobal) {
+					// Check if we're in chat view
+					if m.tabs.GetCurrentTab() == tabs.ChatTab {
+						// Only exit view if sidebar is focused
+						// Otherwise, let the chat view handle it (e.g., exit thread, or do nothing)
+						if m.chatView.IsSidebarFocused() {
+							m.focusLevel = FocusLevelTab
+							m.exitCurrentView()
+							return m, nil
+						}
+						// Let chat view handle the escape key
+					} else {
+						// For other views (Activity, User), exit view normally
+						m.focusLevel = FocusLevelTab
+						m.exitCurrentView()
+						return m, nil
+					}
+				}
+				// All other keys fall through to the active view
 			}
 		}
 
@@ -249,10 +287,20 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case threadRepliesLoadedMsg:
 		// Set thread replies in the chat view
-		selectedCh := m.chatView.GetSelectedChannel()
-		if selectedCh != nil {
-			m.chatView.SetThreadReplies(msg.channelID, selectedCh.GetDisplayName(), msg.threadTS, &msg.parentMessage, msg.messages)
+		// Find the channel by ID to get its display name
+		var channelName string
+		for _, ch := range m.chatView.GetChannels() {
+			if ch.ID == msg.channelID {
+				channelName = ch.GetDisplayName()
+				break
+			}
 		}
+		// If we couldn't find the channel, use a fallback but still show the thread
+		if channelName == "" {
+			slog.Warn("Could not find channel name for thread", "channelID", msg.channelID)
+			channelName = "unknown"
+		}
+		m.chatView.SetThreadReplies(msg.channelID, channelName, msg.threadTS, &msg.parentMessage, msg.messages)
 		return m, nil
 
 	case messageSentMsg:
@@ -485,7 +533,41 @@ func (m TUIModel) View() string {
 	return s.String()
 }
 
+// enterCurrentView is called when the user presses Space at tab level to enter a view
+func (m *TUIModel) enterCurrentView() {
+	currentTab := m.tabs.GetCurrentTab()
+
+	switch currentTab {
+	case tabs.ChatTab:
+		// Enter chat view - start with sidebar focused
+		m.chatView.EnterView()
+	case tabs.ActivityTab:
+		// Enter activity view - focus on the activity list
+		m.activityView.SetFocused(true)
+	case tabs.UserTab:
+		// User view doesn't have interactive elements, but we still mark as entered
+		// No specific action needed
+	}
+}
+
+// exitCurrentView is called when the user presses Esc at view level to return to tab level
+func (m *TUIModel) exitCurrentView() {
+	currentTab := m.tabs.GetCurrentTab()
+
+	switch currentTab {
+	case tabs.ChatTab:
+		// Exit chat view
+		m.chatView.ExitView()
+	case tabs.ActivityTab:
+		// Exit activity view
+		m.activityView.SetFocused(false)
+	case tabs.UserTab:
+		// User view has no special exit logic
+	}
+}
+
 // updateViewFocus sets focus on the active view and removes focus from others
+// Deprecated: This is kept for compatibility but should be phased out in favor of enterCurrentView/exitCurrentView
 func (m *TUIModel) updateViewFocus() {
 	currentTab := m.tabs.GetCurrentTab()
 

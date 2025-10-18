@@ -17,6 +17,8 @@ const (
 const (
 	ActionNextTab      Action = "next_tab"
 	ActionPrevTab      Action = "prev_tab"
+	ActionEnterView    Action = "enter_view" // Enter the current tab's view (Space at tab level)
+	ActionExitView     Action = "exit_view"  // Exit view and return to tab level (Esc at view level)
 	ActionUp           Action = "up"
 	ActionDown         Action = "down"
 	ActionLeft         Action = "left"
@@ -28,7 +30,7 @@ const (
 	ActionGoToChat     Action = "go_to_chat"
 	ActionGoToActivity Action = "go_to_activity"
 	ActionGoToUser     Action = "go_to_user"
-	ActionBeginInput   Action = "begin_input" // Jump to input to start typing
+	ActionBeginInput   Action = "begin_input" // Jump to input to start typing (deprecated in favor of tab cycling)
 )
 
 // Selection actions
@@ -121,6 +123,8 @@ var Registry = map[Action]ActionInfo{
 	// Navigation actions
 	ActionNextTab:      {Action: ActionNextTab, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.next_tab"},
 	ActionPrevTab:      {Action: ActionPrevTab, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.prev_tab"},
+	ActionEnterView:    {Action: ActionEnterView, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.enter_view"},
+	ActionExitView:     {Action: ActionExitView, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.exit_view"},
 	ActionUp:           {Action: ActionUp, Scopes: []ActionScope{ScopeGlobal, ScopeInit}, Description: "keys.up"},
 	ActionDown:         {Action: ActionDown, Scopes: []ActionScope{ScopeGlobal, ScopeInit}, Description: "keys.down"},
 	ActionLeft:         {Action: ActionLeft, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.left"},

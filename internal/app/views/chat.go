@@ -72,6 +72,7 @@ type ChatModel struct {
 	selectedChannel *models.Channel
 	focused         FocusedComponent
 	threadActive    bool // Whether thread view is active
+	viewEntered     bool // Whether the user has entered the view from tab level
 }
 
 // NewChatModel creates a new chat view model
@@ -108,67 +109,27 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Only handle internal navigation if view has been entered
+		if !m.viewEntered {
+			// View not entered yet, don't handle any keys
+			return m, nil
+		}
+
 		// Handle focus switching with keyMap if available
 		if m.keyMap != nil {
-			// Space key: jump to input if channel selected, otherwise focus sidebar
-			if m.keyMap.MatchesAction(msg, actions.ActionBeginInput, actions.ScopeChat) {
-				if m.selectedChannel != nil && m.focused != FocusInput {
-					// Channel selected: jump to input
-					m.setFocus(FocusInput)
-					return m, nil
-				} else if m.selectedChannel == nil {
-					// No channel selected: focus sidebar (always ensure it's highlighted)
-					m.setFocus(FocusSidebar)
-					return m, nil
-				}
+			// Tab/Shift+Tab: Cycle through elements when view is entered
+			if m.keyMap.MatchesAction(msg, actions.ActionNextTab, actions.ScopeGlobal) {
+				m.cycleFocusForward()
+				return m, nil
 			}
-
-			// Vertical navigation (down/up) for messages <-> input
-			if m.focused == FocusMessages {
-				if m.keyMap.MatchesAction(msg, actions.ActionDown, actions.ScopeGlobal) {
-					m.setFocus(FocusInput)
-					return m, nil
-				}
-			}
-			if m.focused == FocusInput {
-				if m.keyMap.MatchesAction(msg, actions.ActionUp, actions.ScopeGlobal) {
-					m.setFocus(FocusMessages)
-					return m, nil
-				}
-			}
-
-			// Horizontal navigation (left/right) for sidebar <-> content
-			if m.focused != FocusInput {
-				if m.keyMap.MatchesAction(msg, actions.ActionRight, actions.ScopeGlobal) {
-					m.cycleFocusForward()
-					return m, nil
-				}
-				if m.keyMap.MatchesAction(msg, actions.ActionLeft, actions.ScopeGlobal) {
-					m.cycleFocusBackward()
-					return m, nil
-				}
+			if m.keyMap.MatchesAction(msg, actions.ActionPrevTab, actions.ScopeGlobal) {
+				m.cycleFocusBackward()
+				return m, nil
 			}
 		}
 
-		// Handle focus switching with hardcoded keys (fallback)
+		// Handle other keys
 		switch msg.String() {
-		case "esc":
-			// Escape key: exit thread if active, otherwise return to sidebar
-			if m.threadActive {
-				m.exitThread()
-				return m, nil
-			} else if m.focused != FocusSidebar {
-				m.setFocus(FocusSidebar)
-				return m, nil
-			}
-		case "tab":
-			// Cycle focus forward: sidebar -> messages -> input -> sidebar
-			m.cycleFocusForward()
-			return m, nil
-		case "shift+tab":
-			// Cycle focus backward: sidebar -> input -> messages -> sidebar
-			m.cycleFocusBackward()
-			return m, nil
 		case "enter":
 			// If on sidebar, select channel (keep focus on sidebar)
 			if m.focused == FocusSidebar {
@@ -184,6 +145,32 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 				}
 				return m, nil
 			}
+		case "esc":
+			// Escape key behavior:
+			// - If thread is active: exit thread and return to channel
+			// - If messages/input focused: return focus to sidebar
+			// - If sidebar focused: (handled by parent TUI) exit view to tab level
+			if m.threadActive {
+				// Get the thread's channel ID before clearing it
+				threadChannelID := m.thread.GetChannelID()
+				m.exitThread()
+
+				// If the thread's channel is different from the currently selected channel,
+				// select it and reload messages
+				if threadChannelID != "" && (m.selectedChannel == nil || m.selectedChannel.ID != threadChannelID) {
+					m.SelectChannel(threadChannelID)
+					return m, func() tea.Msg {
+						return ChannelSelectedMsg{ChannelID: threadChannelID}
+					}
+				}
+				// Otherwise, we're already viewing the correct channel, just return
+				return m, nil
+			} else if m.focused == FocusMessages || m.focused == FocusInput {
+				// Return focus to sidebar when escape is pressed from messages or input
+				m.setFocus(FocusSidebar)
+				return m, nil
+			}
+			// If sidebar is focused, escape is handled by parent TUI to exit view
 		}
 
 	case input.SendMessageMsg:
@@ -499,6 +486,33 @@ func (m *ChatModel) UpdateChannelUnread(channelID string, unreadCount int, hasUn
 
 	// Update sidebar with modified channels
 	m.sidebar.SetChannels(channels)
+}
+
+// EnterView is called when the user presses Space at tab level to enter the chat view
+func (m *ChatModel) EnterView() {
+	m.viewEntered = true
+	// Start with sidebar focused
+	m.setFocus(FocusSidebar)
+}
+
+// ExitView is called when the user presses Esc at view level to return to tab level
+func (m *ChatModel) ExitView() {
+	m.viewEntered = false
+	// Clear focus from all components
+	m.sidebar.SetFocused(false)
+	m.messages.SetFocused(false)
+	m.thread.SetFocused(false)
+	m.input.SetFocused(false)
+}
+
+// IsThreadActive returns whether a thread is currently active
+func (m ChatModel) IsThreadActive() bool {
+	return m.threadActive
+}
+
+// IsSidebarFocused returns whether the sidebar is currently focused
+func (m ChatModel) IsSidebarFocused() bool {
+	return m.focused == FocusSidebar
 }
 
 // localize is a helper function to localize a message by ID with an optional fallback

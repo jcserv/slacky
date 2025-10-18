@@ -198,13 +198,17 @@ func TestTUIModelUpdateTabNavigation(t *testing.T) {
 		}
 	})
 
-	t.Run("User key shortcut", func(t *testing.T) {
-		msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}}
+	// Note: Number key shortcuts are now disabled by default and require
+	// navigation.number_keys_global config option to be enabled
+	t.Run("Number keys disabled by default", func(t *testing.T) {
+		initialTab := m.tabs.GetCurrentTab()
+		msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}}
 		updatedModel, _ := m.Update(msg)
 		tuiModel := updatedModel.(TUIModel)
 
-		if tuiModel.tabs.GetCurrentTab() != tabs.UserTab {
-			t.Error("Expected to navigate to UserTab with 'u' key")
+		// Tab should not change since number keys are disabled by default
+		if tuiModel.tabs.GetCurrentTab() != initialTab {
+			t.Error("Expected tab to not change with number keys when disabled")
 		}
 	})
 }
@@ -444,14 +448,23 @@ func TestTUIKeyBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("User key binding", func(t *testing.T) {
-		userKey, ok := m.keyMap.GetBinding(actions.ActionGoToUser, actions.ScopeGlobal)
+	t.Run("Enter/Exit view key bindings", func(t *testing.T) {
+		enterViewKey, ok := m.keyMap.GetBinding(actions.ActionEnterView, actions.ScopeGlobal)
 		if !ok {
-			t.Error("Expected GoToUser binding to exist")
+			t.Error("Expected EnterView binding to exist")
 		}
 
-		if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}}, userKey) {
-			t.Error("'u' key should match GoToUser binding")
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}}, enterViewKey) {
+			t.Error("Space key should match EnterView binding")
+		}
+
+		exitViewKey, ok := m.keyMap.GetBinding(actions.ActionExitView, actions.ScopeGlobal)
+		if !ok {
+			t.Error("Expected ExitView binding to exist")
+		}
+
+		if !key.Matches(tea.KeyMsg{Type: tea.KeyEsc}, exitViewKey) {
+			t.Error("Esc key should match ExitView binding")
 		}
 	})
 }

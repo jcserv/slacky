@@ -45,6 +45,18 @@ func LoadKeybindings(cfg *config.Config, localizer *i18n.Localizer) (*ScopedKeyM
 		return nil, fmt.Errorf("failed to load global keybindings: %w", err)
 	}
 
+	// Add number key navigation if enabled in config
+	if cfg != nil && cfg.Navigation != nil && cfg.Navigation.NumberKeysGlobal {
+		numberKeyBindings := []KeybindingDef{
+			{Action: actions.ActionGoToChat, Keys: []string{"1"}},
+			{Action: actions.ActionGoToActivity, Keys: []string{"2"}},
+			{Action: actions.ActionGoToUser, Keys: []string{"3"}},
+		}
+		if err := loadScopeKeybindings(scopedMap.Global, numberKeyBindings, localizer); err != nil {
+			return nil, fmt.Errorf("failed to load number key bindings: %w", err)
+		}
+	}
+
 	// Load chat keybindings
 	if err := loadScopeKeybindings(scopedMap.Chat, defaults[actions.ScopeChat], localizer); err != nil {
 		return nil, fmt.Errorf("failed to load chat keybindings: %w", err)
@@ -259,6 +271,8 @@ func (s *ScopedKeyMap) GetEssentialBindings(scope actions.ActionScope) []key.Bin
 		actions.ActionToggleHelp,
 		actions.ActionNextTab,
 		actions.ActionPrevTab,
+		actions.ActionEnterView,
+		actions.ActionExitView,
 	}
 
 	// Add scope-specific essential actions
@@ -268,13 +282,23 @@ func (s *ScopedKeyMap) GetEssentialBindings(scope actions.ActionScope) []key.Bin
 		essentialActions = []actions.Action{
 			actions.ActionQuit,
 			actions.ActionToggleHelp,
+			actions.ActionExitView,
 			actions.ActionNextTab,
-			actions.ActionSearch,
 		}
 	case actions.ScopeActivity:
-		essentialActions = essentialGlobal
+		essentialActions = []actions.Action{
+			actions.ActionQuit,
+			actions.ActionToggleHelp,
+			actions.ActionExitView,
+			actions.ActionNextTab,
+			actions.ActionPrevTab,
+		}
 	case actions.ScopeUser:
-		essentialActions = append(essentialGlobal, actions.ActionSetStatus)
+		essentialActions = []actions.Action{
+			actions.ActionQuit,
+			actions.ActionToggleHelp,
+			actions.ActionExitView,
+		}
 	default:
 		essentialActions = essentialGlobal
 	}
