@@ -2,7 +2,6 @@
 
 # alpha
  - threads - shows thread message count, opens thread view, reply in thread
-- socket mode - live message updates
 - quick reactions  - press cmd+r to open emoji picker, arrow key nav + search
 - copy link  - Press shift+cmd+c to copy message link
 

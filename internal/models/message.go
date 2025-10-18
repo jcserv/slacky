@@ -10,15 +10,16 @@ import (
 
 // Message represents a Slack message
 type Message struct {
-	ID        string
-	ChannelID string
-	UserID    string
-	UserName  string
-	Text      string
-	Timestamp time.Time
-	ThreadTS  string // Thread timestamp (if part of a thread)
-	IsEdited  bool
-	IsPinned  bool
+	ID         string
+	ChannelID  string
+	UserID     string
+	UserName   string
+	Text       string
+	Timestamp  time.Time
+	ThreadTS   string // Thread timestamp (if part of a thread)
+	ReplyCount int    // Number of replies in thread (only for parent messages)
+	IsEdited   bool
+	IsPinned   bool
 
 	// Reactions
 	Reactions []Reaction
@@ -46,6 +47,7 @@ func FromSlackMessage(sm slack.Message, channelID string) Message {
 		Text:        sm.Text,
 		Timestamp:   timestamp,
 		ThreadTS:    sm.ThreadTimestamp,
+		ReplyCount:  sm.ReplyCount,
 		IsEdited:    sm.Edited != nil,
 		Files:       sm.Files,
 		Attachments: sm.Attachments,
@@ -113,6 +115,16 @@ func (m Message) GetDisplayText() string {
 // IsThreadReply returns true if this message is a reply in a thread
 func (m Message) IsThreadReply() bool {
 	return m.ThreadTS != "" && m.ThreadTS != m.ID
+}
+
+// IsThreadParent returns true if this message is the parent of a thread
+func (m Message) IsThreadParent() bool {
+	return m.ThreadTS != "" && m.ThreadTS == m.ID && m.ReplyCount > 0
+}
+
+// HasThread returns true if this message has thread replies
+func (m Message) HasThread() bool {
+	return m.ReplyCount > 0
 }
 
 // IsNewerThan returns true if this message is newer than the given timestamp

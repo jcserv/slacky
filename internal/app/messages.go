@@ -52,6 +52,16 @@ type (
 	activitiesPolledMsg struct {
 		activities []models.Activity
 	}
+	threadRepliesLoadedMsg struct {
+		channelID     string
+		threadTS      string
+		parentMessage models.Message
+		messages      []models.Message
+	}
+	threadReplySentMsg struct {
+		channelID string
+		threadTS  string
+	}
 )
 
 // loadConfig loads and validates the configuration
@@ -517,6 +527,62 @@ func pollActivitiesUpdates(client *slackClient.Client, userID string, channels [
 		// Always return activities, even if empty (don't break polling on errors)
 		return activitiesPolledMsg{
 			activities: activities,
+		}
+	}
+}
+
+// loadThreadReplies fetches all replies in a thread
+func loadThreadReplies(client *slackClient.Client, channelID, threadTS string, parentMessage models.Message) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		slackMessages, err := client.GetThreadReplies(ctx, channelID, threadTS)
+		if err != nil {
+			return errMsg(fmt.Errorf("failed to load thread replies for %s: %w", threadTS, err))
+		}
+
+		// Convert Slack messages to our model
+		messages := make([]models.Message, 0, len(slackMessages))
+		for _, sm := range slackMessages {
+			msg := models.FromSlackMessage(sm, channelID)
+
+			// Fetch user info for the message
+			if msg.UserID != "" {
+				user, err := client.GetUserInfo(ctx, msg.UserID)
+				if err == nil {
+					if user.RealName != "" {
+						msg.UserName = user.RealName
+					} else if user.Profile.DisplayName != "" {
+						msg.UserName = user.Profile.DisplayName
+					} else {
+						msg.UserName = user.Name
+					}
+				}
+			}
+
+			messages = append(messages, msg)
+		}
+
+		return threadRepliesLoadedMsg{
+			channelID:     channelID,
+			threadTS:      threadTS,
+			parentMessage: parentMessage,
+			messages:      messages,
+		}
+	}
+}
+
+// sendThreadReply sends a message as a thread reply
+func sendThreadReply(client *slackClient.Client, channelID, threadTS, text string) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		err := client.SendThreadMessage(ctx, channelID, threadTS, text)
+		if err != nil {
+			return errMsg(fmt.Errorf("failed to send thread reply: %w", err))
+		}
+
+		return threadReplySentMsg{
+			channelID: channelID,
+			threadTS:  threadTS,
 		}
 	}
 }
