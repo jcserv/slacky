@@ -35,10 +35,11 @@ const (
 
 // Selection actions
 const (
-	ActionContinue Action = "continue"
-	ActionSelect   Action = "select"
-	ActionToggle   Action = "toggle"
-	ActionCancel   Action = "cancel"
+	ActionContinue           Action = "continue"
+	ActionSelect             Action = "select"
+	ActionSelectConversation Action = "select_conversation" // Select a conversation in sidebar
+	ActionToggle             Action = "toggle"
+	ActionCancel             Action = "cancel"
 )
 
 // Message actions - for chat view
@@ -47,6 +48,7 @@ const (
 	ActionEditMessage     Action = "edit_message"
 	ActionDeleteMessage   Action = "delete_message"
 	ActionReplyInThread   Action = "reply_in_thread"
+	ActionOpenThread      Action = "open_thread" // Open a thread from a message
 	ActionReact           Action = "react"
 	ActionSaveMessage     Action = "save_message"
 	ActionPinMessage      Action = "pin_message"
@@ -139,16 +141,18 @@ var Registry = map[Action]ActionInfo{
 	ActionBeginInput:   {Action: ActionBeginInput, Scopes: []ActionScope{ScopeChat}, Description: "keys.begin_input"},
 
 	// Selection actions
-	ActionContinue: {Action: ActionContinue, Scopes: []ActionScope{ScopeGlobal, ScopeInit}, Description: "keys.continue"},
-	ActionSelect:   {Action: ActionSelect, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.select"},
-	ActionToggle:   {Action: ActionToggle, Scopes: []ActionScope{ScopeInit}, Description: "keys.toggle"},
-	ActionCancel:   {Action: ActionCancel, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.cancel"},
+	ActionContinue:           {Action: ActionContinue, Scopes: []ActionScope{ScopeGlobal, ScopeInit}, Description: "keys.continue"},
+	ActionSelect:             {Action: ActionSelect, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.select"},
+	ActionSelectConversation: {Action: ActionSelectConversation, Scopes: []ActionScope{ScopeChat}, Description: "keys.select_conversation"},
+	ActionToggle:             {Action: ActionToggle, Scopes: []ActionScope{ScopeInit}, Description: "keys.toggle"},
+	ActionCancel:             {Action: ActionCancel, Scopes: []ActionScope{ScopeGlobal}, Description: "keys.cancel"},
 
 	// Message actions
 	ActionSendMessage:     {Action: ActionSendMessage, Scopes: []ActionScope{ScopeChat, ScopeMessage}, Description: "keys.send_message"},
 	ActionEditMessage:     {Action: ActionEditMessage, Scopes: []ActionScope{ScopeChat}, Description: "keys.edit_message"},
 	ActionDeleteMessage:   {Action: ActionDeleteMessage, Scopes: []ActionScope{ScopeChat}, Description: "keys.delete_message"},
 	ActionReplyInThread:   {Action: ActionReplyInThread, Scopes: []ActionScope{ScopeChat}, Description: "keys.reply_in_thread"},
+	ActionOpenThread:      {Action: ActionOpenThread, Scopes: []ActionScope{ScopeChat}, Description: "keys.open_thread"},
 	ActionReact:           {Action: ActionReact, Scopes: []ActionScope{ScopeChat}, Description: "keys.react"},
 	ActionSaveMessage:     {Action: ActionSaveMessage, Scopes: []ActionScope{ScopeChat}, Description: "keys.save_message"},
 	ActionPinMessage:      {Action: ActionPinMessage, Scopes: []ActionScope{ScopeChat}, Description: "keys.pin_message"},

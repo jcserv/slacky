@@ -21,7 +21,7 @@ func DefaultGlobalKeybindings() []KeybindingDef {
 		// Tab navigation
 		{Action: actions.ActionNextTab, Keys: []string{"tab"}},
 		{Action: actions.ActionPrevTab, Keys: []string{"shift+tab"}},
-		{Action: actions.ActionEnterView, Keys: []string{" ", "space"}},
+		{Action: actions.ActionEnterView, Keys: []string{" ", "space", "enter"}},
 		{Action: actions.ActionExitView, Keys: []string{"esc"}},
 
 		// View navigation (disabled by default, can be enabled in config)
@@ -50,6 +50,10 @@ func DefaultChatKeybindings() []KeybindingDef {
 	return []KeybindingDef{
 		// Focus navigation
 		{Action: actions.ActionBeginInput, Keys: []string{" ", "space"}},
+
+		// Selection actions
+		{Action: actions.ActionSelectConversation, Keys: []string{" ", "space", "enter"}},
+		{Action: actions.ActionOpenThread, Keys: []string{" ", "space", "enter"}},
 
 		// Message actions
 		{Action: actions.ActionSendMessage, Keys: []string{"enter"}},
