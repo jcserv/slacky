@@ -111,12 +111,6 @@ func (m Model) renderHeader() string {
 		Render(titleDisplay)
 }
 
-// formatReplyCount formats the reply count text
-func (m Model) formatReplyCount(count int) string {
-	template := m.localize("thread.replies", "{{.Count}} replies")
-	return strings.ReplaceAll(template, "{{.Count}}", fmt.Sprintf("%d", count))
-}
-
 // SetSize sets the dimensions of the thread viewport
 func (m *Model) SetSize(width, height int) {
 	m.width = width
