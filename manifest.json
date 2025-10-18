@@ -19,9 +19,12 @@
         "mpim:history",
         "mpim:read",
         "mpim:write",
-        "users:read",
+        "reactions:read",
+        "reactions:write",
+        "search:read",
         "stars:read",
-        "stars:write"
+        "stars:write",
+        "users:read"
       ]
     }
   },

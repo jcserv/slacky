@@ -152,3 +152,82 @@ func (c *Client) GetStarredConversations(ctx context.Context) ([]string, error) 
 
 	return starredChannelIDs, nil
 }
+
+// SearchMessages searches for messages matching a query
+// Query syntax: https://api.slack.com/methods/search.messages
+// Example queries:
+//   - "from:@username" - messages from a user
+//   - "in:#channel" - messages in a channel
+//   - "@username" or "mentions:me" - messages mentioning a user
+func (c *Client) SearchMessages(ctx context.Context, query string, limit int) ([]slack.SearchMessage, error) {
+	params := slack.SearchParameters{
+		Count:         limit,
+		Sort:          "timestamp",
+		SortDirection: "desc",
+		Highlight:     false,
+	}
+
+	messages, err := c.api.SearchMessagesContext(ctx, query, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search messages: %w", err)
+	}
+
+	return messages.Matches, nil
+}
+
+// GetUserReactions retrieves reactions made by or to the authenticated user
+func (c *Client) GetUserReactions(ctx context.Context, limit int) ([]slack.ReactedItem, error) {
+	params := slack.ListReactionsParameters{
+		Count: limit,
+		Full:  true, // Get full message details
+	}
+
+	items, _, err := c.api.ListReactionsContext(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reactions: %w", err)
+	}
+
+	return items, nil
+}
+
+// GetUnreadConversations retrieves conversations with unread messages
+func (c *Client) GetUnreadConversations(ctx context.Context) ([]slack.Channel, error) {
+	var unreadChannels []slack.Channel
+	params := &slack.GetConversationsParameters{
+		Types:           []string{"public_channel", "private_channel", "im", "mpim"},
+		Limit:           100,
+		ExcludeArchived: true,
+	}
+
+	for {
+		channels, nextCursor, err := c.api.GetConversationsContext(ctx, params)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get conversations: %w", err)
+		}
+
+		// Filter for channels with unread messages
+		for _, channel := range channels {
+			// Get conversation info to check for unread messages
+			info, err := c.api.GetConversationInfoContext(ctx, &slack.GetConversationInfoInput{
+				ChannelID:         channel.ID,
+				IncludeNumMembers: false,
+			})
+			if err != nil {
+				continue // Skip on error
+			}
+
+			// Check if there are unread messages
+			if info.UnreadCount > 0 {
+				channel.UnreadCount = info.UnreadCount
+				unreadChannels = append(unreadChannels, channel)
+			}
+		}
+
+		if nextCursor == "" {
+			break
+		}
+		params.Cursor = nextCursor
+	}
+
+	return unreadChannels, nil
+}

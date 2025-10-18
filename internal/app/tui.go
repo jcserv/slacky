@@ -38,6 +38,7 @@ type TUIModel struct {
 	authSuccess  bool
 	teamName     string
 	userName     string
+	userID       string // Slack user ID for activity fetching
 	localizer    *i18n.Localizer
 	showHelp     bool
 }
@@ -127,24 +128,29 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Handle tab navigation
 			if m.keyMap.MatchesAction(msg, actions.ActionNextTab, actions.ScopeGlobal) {
 				m.tabs.NextTab()
+				m.updateViewFocus()
 				return m, nil
 			}
 			if m.keyMap.MatchesAction(msg, actions.ActionPrevTab, actions.ScopeGlobal) {
 				m.tabs.PrevTab()
+				m.updateViewFocus()
 				return m, nil
 			}
 
 			// Handle direct view navigation
 			if m.keyMap.MatchesAction(msg, actions.ActionGoToChat, actions.ScopeGlobal) {
 				m.tabs.SetCurrentTab(tabs.ChatTab)
+				m.updateViewFocus()
 				return m, nil
 			}
 			if m.keyMap.MatchesAction(msg, actions.ActionGoToActivity, actions.ScopeGlobal) {
 				m.tabs.SetCurrentTab(tabs.ActivityTab)
+				m.updateViewFocus()
 				return m, nil
 			}
 			if m.keyMap.MatchesAction(msg, actions.ActionGoToUser, actions.ScopeGlobal) {
 				m.tabs.SetCurrentTab(tabs.UserTab)
+				m.updateViewFocus()
 				return m, nil
 			}
 		}
@@ -159,11 +165,15 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.authSuccess = true
 		m.teamName = msg.teamName
 		m.userName = msg.userName
+		m.userID = msg.userID
 
 		// Update components with user info
 		m.tabs.SetUserName(msg.userName)
 		m.userView.SetUserInfo(msg.userName, msg.teamName)
 		m.statusBar.SetConnected(true)
+
+		// Set focus on the initial tab
+		m.updateViewFocus()
 
 		// Load channels after successful auth
 		return m, loadChannels(m.app.SlackClient)
@@ -179,7 +189,21 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		currentChannels := m.chatView.GetChannels()
 		updatedChannels := models.MarkAsStarred(currentChannels, msg.starredIDs)
 		m.chatView.SetChannels(updatedChannels)
+		// Load activities after channels and starred conversations are ready
+		return m, loadActivities(m.app.SlackClient, m.userID, updatedChannels)
+
+	case activitiesLoadedMsg:
+		// Set activities in the activity view
+		m.activityView.SetActivities(msg.activities)
 		return m, nil
+
+	case activitySelectedMsg:
+		// Switch to chat tab and select the channel
+		m.tabs.SetCurrentTab(tabs.ChatTab)
+		m.updateViewFocus()
+		m.chatView.SelectChannel(msg.channelID)
+		// Load messages for the selected channel
+		return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
 
 	case messagesLoadedMsg:
 		// Set messages in the chat view
@@ -206,6 +230,15 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// Load messages for the selected channel
 		return m, loadMessages(m.app.SlackClient, msg.ChannelID, 100)
+
+	case views.ActivitySelectedMsg:
+		// Convert to internal activitySelectedMsg
+		return m, func() tea.Msg {
+			return activitySelectedMsg{
+				channelID: msg.ChannelID,
+				threadTS:  msg.ThreadTS,
+			}
+		}
 
 	case statusbar.TickMsg:
 		// Update status bar with tick
@@ -338,4 +371,21 @@ func (m TUIModel) View() string {
 	s.WriteString(m.statusBar.View())
 
 	return s.String()
+}
+
+// updateViewFocus sets focus on the active view and removes focus from others
+func (m *TUIModel) updateViewFocus() {
+	currentTab := m.tabs.GetCurrentTab()
+
+	// Set focus based on current tab
+	switch currentTab {
+	case tabs.ChatTab:
+		// Chat view doesn't have a SetFocused method, it manages its own focus
+		m.activityView.SetFocused(false)
+	case tabs.ActivityTab:
+		m.activityView.SetFocused(true)
+	case tabs.UserTab:
+		// User view doesn't need focus (mostly static info)
+		m.activityView.SetFocused(false)
+	}
 }

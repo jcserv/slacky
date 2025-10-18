@@ -1,14 +1,13 @@
 # current work
-main view: 
- - should also load in DMs
 
-# mvp
+# alpha
+ - threads - shows thread message count, opens thread view, reply in thread
+- socket mode - live message updates
+- quick reactions  - press cmd+r to open emoji picker, arrow key nav + search
+- copy link  - Press shift+cmd+c to copy message link
 
+# beta 
 core functionality
-  - channels
-    - top bar (links, folders) 
-    - star channel
-  - dms
   - command bar
     - # --> query channels
     - @ --> query people
@@ -34,22 +33,17 @@ core functionality
         - from anyone
       - message has (file / action / link)
       - message is (dm / thread / saved / pinned)  
-  - activity -> recent messages
   - file attachments
 
 user
   - set status
-  - reply in thread
 
 message
-  - send message
   - schedule message
-  - react; reactions
   - delete
   - save message for later
   - mark as unread
   - pin to channel
-  - copy link
   - forward message
   - remind me
 

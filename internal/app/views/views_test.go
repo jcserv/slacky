@@ -157,8 +157,9 @@ func TestActivityModelView(t *testing.T) {
 		t.Error("View should not return empty string")
 	}
 
-	if !strings.Contains(view, "Activity View") {
-		t.Error("View should contain 'Activity View' title")
+	// Check for filter status line
+	if !strings.Contains(view, "[All]") {
+		t.Error("View should contain filter status showing current filter")
 	}
 }
 
