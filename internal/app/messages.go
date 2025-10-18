@@ -64,6 +64,20 @@ type (
 		channelID string
 		threadTS  string
 	}
+	// Reaction messages
+	reactionAddedMsg struct {
+		channelID string
+		timestamp string
+		emojiName string
+	}
+	reactionRemovedMsg struct {
+		channelID string
+		timestamp string
+		emojiName string
+	}
+	reactionErrorMsg struct {
+		err error
+	}
 )
 
 // loadConfig loads and validates the configuration
@@ -514,6 +528,53 @@ func sendThreadReply(client *slackClient.Client, channelID, threadTS, text strin
 		return threadReplySentMsg{
 			channelID: channelID,
 			threadTS:  threadTS,
+		}
+	}
+}
+
+// toggleReaction toggles a reaction on a message (adds if not present, removes if present)
+func toggleReaction(client *slackClient.Client, channelID, timestamp, emojiName string, userID string, currentReactions []models.Reaction) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+
+		// Check if the user has already reacted with this emoji
+		hasReacted := false
+		for _, reaction := range currentReactions {
+			if reaction.Name == emojiName {
+				// Check if the current user is in the list
+				for _, uid := range reaction.Users {
+					if uid == userID {
+						hasReacted = true
+						break
+					}
+				}
+				break
+			}
+		}
+
+		var err error
+		if hasReacted {
+			// Remove the reaction
+			err = client.RemoveReaction(ctx, channelID, timestamp, emojiName)
+			if err != nil {
+				return reactionErrorMsg{err: fmt.Errorf("failed to remove reaction: %w", err)}
+			}
+			return reactionRemovedMsg{
+				channelID: channelID,
+				timestamp: timestamp,
+				emojiName: emojiName,
+			}
+		} else {
+			// Add the reaction
+			err = client.AddReaction(ctx, channelID, timestamp, emojiName)
+			if err != nil {
+				return reactionErrorMsg{err: fmt.Errorf("failed to add reaction: %w", err)}
+			}
+			return reactionAddedMsg{
+				channelID: channelID,
+				timestamp: timestamp,
+				emojiName: emojiName,
+			}
 		}
 	}
 }

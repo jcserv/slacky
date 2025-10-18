@@ -316,3 +316,40 @@ func (c *Client) SendThreadMessage(ctx context.Context, channelID, threadTS, tex
 	}
 	return nil
 }
+
+// AddReaction adds a reaction emoji to a message
+func (c *Client) AddReaction(ctx context.Context, channelID, timestamp, emojiName string) error {
+	itemRef := slack.ItemRef{
+		Channel:   channelID,
+		Timestamp: timestamp,
+	}
+
+	err := c.api.AddReactionContext(ctx, emojiName, itemRef)
+	if err != nil {
+		return fmt.Errorf("failed to add reaction %s: %w", emojiName, err)
+	}
+	return nil
+}
+
+// RemoveReaction removes a reaction emoji from a message
+func (c *Client) RemoveReaction(ctx context.Context, channelID, timestamp, emojiName string) error {
+	itemRef := slack.ItemRef{
+		Channel:   channelID,
+		Timestamp: timestamp,
+	}
+
+	err := c.api.RemoveReactionContext(ctx, emojiName, itemRef)
+	if err != nil {
+		return fmt.Errorf("failed to remove reaction %s: %w", emojiName, err)
+	}
+	return nil
+}
+
+// GetCurrentUserID returns the authenticated user's ID
+func (c *Client) GetCurrentUserID(ctx context.Context) (string, error) {
+	resp, err := c.api.AuthTestContext(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get current user ID: %w", err)
+	}
+	return resp.UserID, nil
+}
