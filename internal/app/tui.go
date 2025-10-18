@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/jcserv/slacky/internal/app/views"
+	"github.com/jcserv/slacky/internal/config"
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/models"
 	"github.com/jcserv/slacky/internal/tui"
@@ -41,6 +43,11 @@ type TUIModel struct {
 	userID       string // Slack user ID for activity fetching
 	localizer    *i18n.Localizer
 	showHelp     bool
+
+	// Polling state
+	pollingConfig    PollingConfig
+	lastMessageTS    map[string]string // Map of channelID -> last message timestamp
+	currentChannelID string            // Currently selected channel ID for polling
 }
 
 // NewTUI creates a new TUI model with the given app
@@ -64,18 +71,36 @@ func (app *App) NewTUI() TUIModel {
 	chatView := views.NewChatModel()
 	chatView.SetKeyMap(keyMap)
 
+	// Load polling config from app config or use defaults
+	pollingConfig := DefaultPollingConfig()
+	if app.config.Polling != nil {
+		pollingConfig = loadPollingConfigFromConfig(app.config.Polling)
+	}
+
 	return TUIModel{
-		app:          app,
-		spinner:      s,
-		keyMap:       keyMap,
-		tabs:         tabs.NewModel(),
-		statusBar:    statusbar.NewModel(),
-		chatView:     chatView,
-		activityView: views.NewActivityModel(),
-		userView:     views.NewUserModel(),
-		version:      "v0.1.0-dev",
-		localizer:    localizer,
-		showHelp:     true, // Show help by default for new users
+		app:           app,
+		spinner:       s,
+		keyMap:        keyMap,
+		tabs:          tabs.NewModel(),
+		statusBar:     statusbar.NewModel(),
+		chatView:      chatView,
+		activityView:  views.NewActivityModel(),
+		userView:      views.NewUserModel(),
+		version:       "v0.1.0-dev",
+		localizer:     localizer,
+		showHelp:      true, // Show help by default for new users
+		pollingConfig: pollingConfig,
+		lastMessageTS: make(map[string]string),
+	}
+}
+
+// loadPollingConfigFromConfig converts config.Polling to PollingConfig
+func loadPollingConfigFromConfig(p *config.Polling) PollingConfig {
+	return PollingConfig{
+		Enabled:                p.Enabled,
+		CurrentChannelInterval: time.Duration(p.CurrentChannelInterval) * time.Second,
+		SidebarInterval:        time.Duration(p.SidebarInterval) * time.Second,
+		ActivityInterval:       time.Duration(p.ActivityInterval) * time.Second,
 	}
 }
 
@@ -175,8 +200,11 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Set focus on the initial tab
 		m.updateViewFocus()
 
-		// Load channels after successful auth
-		return m, loadChannels(m.app.SlackClient)
+		// Load channels and start polling after successful auth
+		return m, tea.Batch(
+			loadChannels(m.app.SlackClient),
+			startPolling(m.pollingConfig),
+		)
 
 	case channelsLoadedMsg:
 		// Set channels in the chat view
@@ -208,6 +236,15 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case messagesLoadedMsg:
 		// Set messages in the chat view
 		m.chatView.SetMessages(msg.messages)
+
+		// Track last message timestamp for polling
+		if len(msg.messages) > 0 {
+			lastMsg := msg.messages[len(msg.messages)-1]
+			m.lastMessageTS[msg.channelID] = lastMsg.GetTimestamp()
+		}
+
+		// Update current channel ID for polling
+		m.currentChannelID = msg.channelID
 		return m, nil
 
 	case messageSentMsg:
@@ -239,6 +276,60 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				threadTS:  msg.ThreadTS,
 			}
 		}
+
+	case pollTickMsg:
+		// Handle polling ticks
+		switch msg.pollType {
+		case PollTypeCurrentChannel:
+			// Poll current channel for new messages
+			lastTS := m.lastMessageTS[m.currentChannelID]
+			cmd := pollCurrentChannelMessages(m.app.SlackClient, m.currentChannelID, lastTS)
+			// Schedule next poll
+			nextPoll := pollCurrentChannel(m.pollingConfig.CurrentChannelInterval)
+			return m, tea.Batch(cmd, nextPoll)
+
+		case PollTypeSidebar:
+			// Poll sidebar for unread counts
+			channelIDs := make([]string, 0)
+			for _, ch := range m.chatView.GetChannels() {
+				channelIDs = append(channelIDs, ch.ID)
+			}
+			cmd := pollSidebarUnreads(m.app.SlackClient, channelIDs)
+			// Schedule next poll
+			nextPoll := pollSidebar(m.pollingConfig.SidebarInterval)
+			return m, tea.Batch(cmd, nextPoll)
+
+		case PollTypeActivity:
+			// Poll for new activities
+			cmd := pollActivitiesUpdates(m.app.SlackClient, m.userID, m.chatView.GetChannels())
+			// Schedule next poll
+			nextPoll := pollActivity(m.pollingConfig.ActivityInterval)
+			return m, tea.Batch(cmd, nextPoll)
+		}
+
+	case newMessagesPolledMsg:
+		// Handle new messages from polling
+		if msg.channelID == m.currentChannelID && len(msg.messages) > 0 {
+			// Add new messages to the current view
+			for _, newMsg := range msg.messages {
+				m.chatView.AddMessage(newMsg)
+			}
+
+			// Update last message timestamp
+			lastMsg := msg.messages[len(msg.messages)-1]
+			m.lastMessageTS[msg.channelID] = lastMsg.GetTimestamp()
+		}
+		return m, nil
+
+	case channelUnreadUpdatedMsg:
+		// Update sidebar unread indicator
+		m.chatView.UpdateChannelUnread(msg.channelID, msg.unreadCount, msg.hasUnread)
+		return m, nil
+
+	case activitiesPolledMsg:
+		// Update activity view with new activities
+		m.activityView.AppendActivities(msg.activities)
+		return m, nil
 
 	case statusbar.TickMsg:
 		// Update status bar with tick
