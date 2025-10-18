@@ -128,23 +128,40 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 			}
 		}
 
-		// Handle other keys
-		switch msg.String() {
-		case "enter":
-			// If on sidebar, select channel (keep focus on sidebar)
-			if m.focused == FocusSidebar {
-				selectedCh := m.sidebar.GetSelectedChannel()
-				if selectedCh != nil {
-					m.selectedChannel = selectedCh
-					m.messages.SetChannel(selectedCh.ID, selectedCh.GetDisplayName())
-					// Keep focus on sidebar so users can cycle through channels
-					// Emit channel selection message to trigger loading
+		// Handle conversation selection in sidebar
+		if m.focused == FocusSidebar && m.keyMap.MatchesAction(msg, actions.ActionSelectConversation, actions.ScopeChat) {
+			selectedCh := m.sidebar.GetSelectedChannel()
+			if selectedCh != nil {
+				m.selectedChannel = selectedCh
+				m.messages.SetChannel(selectedCh.ID, selectedCh.GetDisplayName())
+				// Keep focus on sidebar so users can cycle through channels
+				// Emit channel selection message to trigger loading
+				return m, func() tea.Msg {
+					return ChannelSelectedMsg{ChannelID: selectedCh.ID}
+				}
+			}
+			return m, nil
+		}
+
+		// Handle thread opening from messages
+		if m.focused == FocusMessages && m.keyMap.MatchesAction(msg, actions.ActionOpenThread, actions.ScopeChat) {
+			if m.messages.IsSelectionEnabled() {
+				selectedMsg := m.messages.GetSelectedMessage()
+				if selectedMsg != nil && selectedMsg.HasThread() {
 					return m, func() tea.Msg {
-						return ChannelSelectedMsg{ChannelID: selectedCh.ID}
+						return messages.ThreadOpenRequestMsg{
+							ChannelID:     m.selectedChannel.ID,
+							ThreadTS:      selectedMsg.ID,
+							ParentMessage: *selectedMsg,
+						}
 					}
 				}
-				return m, nil
 			}
+			return m, nil
+		}
+
+		// Handle other keys
+		switch msg.String() {
 		case "esc":
 			// Escape key behavior:
 			// - If thread is active: exit thread and return to channel

@@ -162,6 +162,9 @@ other = "enter"
 [keys.select]
 other = "select"
 
+[keys.select_conversation]
+other = "select conversation"
+
 [keys.toggle]
 other = "toggle"
 
@@ -183,6 +186,9 @@ other = "delete message"
 
 [keys.reply_in_thread]
 other = "reply in thread"
+
+[keys.open_thread]
+other = "open thread"
 
 [keys.react]
 other = "react to message"

@@ -90,21 +90,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					m.renderMessages()
 				}
 				return m, nil
-			case "enter":
-				// Open thread if selected message has thread
-				if m.cursor >= 0 && m.cursor < len(m.messages) {
-					selectedMsg := m.messages[m.cursor]
-					if selectedMsg.HasThread() {
-						return m, func() tea.Msg {
-							return ThreadOpenRequestMsg{
-								ChannelID:     m.channelID,
-								ThreadTS:      selectedMsg.ID,
-								ParentMessage: selectedMsg,
-							}
-						}
-					}
-				}
-				return m, nil
 			}
 		}
 
@@ -335,15 +320,23 @@ func (m *Model) EnableSelection() {
 	m.renderMessages()
 }
 
+// GetSelectedMessage returns the currently selected message, or nil if none selected
+func (m Model) GetSelectedMessage() *models.Message {
+	if !m.selectionEnabled || m.cursor < 0 || m.cursor >= len(m.messages) {
+		return nil
+	}
+	return &m.messages[m.cursor]
+}
+
+// IsSelectionEnabled returns whether message selection is currently enabled
+func (m Model) IsSelectionEnabled() bool {
+	return m.selectionEnabled
+}
+
 // DisableSelection disables message selection mode
 func (m *Model) DisableSelection() {
 	m.selectionEnabled = false
 	m.renderMessages()
-}
-
-// IsSelectionEnabled returns whether selection mode is active
-func (m Model) IsSelectionEnabled() bool {
-	return m.selectionEnabled
 }
 
 // localize is a helper function to localize a message by ID with an optional fallback
