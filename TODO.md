@@ -1,12 +1,5 @@
 # current work
 
-# alpha
-- reactions
-  - display reactions
-  - add reaction
-  - quick reactions  - press cmd+r to open emoji picker, arrow key nav + search
-- media
-
 # beta 
 core functionality
   - command bar
@@ -35,6 +28,9 @@ core functionality
       - message has (file / action / link)
       - message is (dm / thread / saved / pinned)  
   - file attachments
+
+reactions
+- emoji picker + search
 
 user
   - set status

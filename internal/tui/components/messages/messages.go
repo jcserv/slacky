@@ -251,6 +251,34 @@ func headerFormatter(channelName string, isThread bool, threadTS string) string 
 	return channelName
 }
 
+// wrapMessageText wraps message text intelligently, preserving URLs on single lines
+func wrapMessageText(text string, width int) string {
+	if text == "" {
+		return ""
+	}
+
+	lines := strings.Split(text, "\n")
+	var wrappedLines []string
+
+	for _, line := range lines {
+		// Check if this line contains a URL (starts with http:// or https://)
+		// or is a link line (starts with spaces and 🔗)
+		trimmedLine := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmedLine, "http://") ||
+			strings.HasPrefix(trimmedLine, "https://") ||
+			strings.HasPrefix(trimmedLine, "🔗") {
+			// Don't wrap URL lines
+			wrappedLines = append(wrappedLines, line)
+		} else {
+			// Wrap regular text lines
+			wrapped := wordwrap.String(line, width)
+			wrappedLines = append(wrappedLines, wrapped)
+		}
+	}
+
+	return strings.Join(wrappedLines, "\n")
+}
+
 // messageFormatter returns a function that formats messages for display
 func messageFormatter(localizer *i18n.Localizer) messageview.MessageFormatter {
 	return func(msg models.Message, width int, index int, state messageview.RenderState) string {
@@ -276,7 +304,7 @@ func messageFormatter(localizer *i18n.Localizer) messageview.MessageFormatter {
 			wrapWidth = 20
 		}
 
-		wrappedText := wordwrap.String(messageText, wrapWidth)
+		wrappedText := wrapMessageText(messageText, wrapWidth)
 
 		// For thread replies, add indent
 		indent := ""
