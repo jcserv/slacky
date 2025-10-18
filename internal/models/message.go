@@ -114,3 +114,17 @@ func (m Message) GetDisplayText() string {
 func (m Message) IsThreadReply() bool {
 	return m.ThreadTS != "" && m.ThreadTS != m.ID
 }
+
+// IsNewerThan returns true if this message is newer than the given timestamp
+func (m Message) IsNewerThan(timestamp string) bool {
+	if timestamp == "" {
+		return true
+	}
+	// Compare timestamps (Slack timestamps are in format "1234567890.123456")
+	return m.ID > timestamp
+}
+
+// GetTimestamp returns the message timestamp as a string (same as ID)
+func (m Message) GetTimestamp() string {
+	return m.ID
+}

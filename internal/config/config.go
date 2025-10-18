@@ -19,6 +19,7 @@ type Config struct {
 	Workspace   Workspace    `yaml:"workspace"`
 	UI          UI           `yaml:"ui"`
 	Keybindings *Keybindings `yaml:"keybindings,omitempty"`
+	Polling     *Polling     `yaml:"polling,omitempty"`
 }
 
 // Workspace contains Slack workspace credentials
@@ -50,6 +51,14 @@ type Keybindings struct {
 	Init     []Keybinding `yaml:"init,omitempty"`
 	User     []Keybinding `yaml:"user,omitempty"`
 	Activity []Keybinding `yaml:"activity,omitempty"`
+}
+
+// Polling contains polling configuration for live updates
+type Polling struct {
+	Enabled                bool `yaml:"enabled"`
+	CurrentChannelInterval int  `yaml:"current_channel_interval_seconds"` // Seconds
+	SidebarInterval        int  `yaml:"sidebar_interval_seconds"`         // Seconds
+	ActivityInterval       int  `yaml:"activity_interval_seconds"`        // Seconds
 }
 
 // DefaultConfig returns a config with default values

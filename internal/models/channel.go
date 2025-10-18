@@ -31,6 +31,9 @@ type Channel struct {
 	UserID   string // User ID for DMs
 	UserName string // User name for DMs
 	IsBot    bool   // Whether this DM is with a bot/app
+
+	// For polling/tracking
+	LastReadTimestamp string // Timestamp of the last message read by the user
 }
 
 // FromSlackChannel converts a slack.Channel to our Channel model
@@ -119,4 +122,17 @@ func MarkAsStarred(channels []Channel, starredIDs []string) []Channel {
 	}
 
 	return updatedChannels
+}
+
+// MarkAsRead updates the LastReadTimestamp for a channel
+func (c *Channel) MarkAsRead(timestamp string) {
+	c.LastReadTimestamp = timestamp
+	c.HasUnread = false
+	c.UnreadCount = 0
+}
+
+// UpdateUnreadStatus updates the unread status of a channel
+func (c *Channel) UpdateUnreadStatus(unreadCount int) {
+	c.UnreadCount = unreadCount
+	c.HasUnread = unreadCount > 0
 }

@@ -191,10 +191,13 @@ func (c *Client) GetUserReactions(ctx context.Context, limit int) ([]slack.React
 }
 
 // GetUnreadConversations retrieves conversations with unread messages
+// Optimized to only check DMs and MPDMs to avoid rate limiting
 func (c *Client) GetUnreadConversations(ctx context.Context) ([]slack.Channel, error) {
 	var unreadChannels []slack.Channel
+
+	// Only check DMs and MPDMs (not all channels) to reduce API calls
 	params := &slack.GetConversationsParameters{
-		Types:           []string{"public_channel", "private_channel", "im", "mpim"},
+		Types:           []string{"im", "mpim"},
 		Limit:           100,
 		ExcludeArchived: true,
 	}
@@ -205,7 +208,8 @@ func (c *Client) GetUnreadConversations(ctx context.Context) ([]slack.Channel, e
 			return nil, fmt.Errorf("failed to get conversations: %w", err)
 		}
 
-		// Filter for channels with unread messages
+		// Check each DM/MPDM for unread messages
+		// Note: This still makes one API call per DM, but DMs are usually fewer than all channels
 		for _, channel := range channels {
 			// Get conversation info to check for unread messages
 			info, err := c.api.GetConversationInfoContext(ctx, &slack.GetConversationInfoInput{
@@ -213,7 +217,7 @@ func (c *Client) GetUnreadConversations(ctx context.Context) ([]slack.Channel, e
 				IncludeNumMembers: false,
 			})
 			if err != nil {
-				continue // Skip on error
+				continue // Skip on error (may be rate limited)
 			}
 
 			// Check if there are unread messages
@@ -230,4 +234,56 @@ func (c *Client) GetUnreadConversations(ctx context.Context) ([]slack.Channel, e
 	}
 
 	return unreadChannels, nil
+}
+
+// GetConversationHistorySince retrieves messages from a channel after a specific timestamp
+// This is useful for polling to get only new messages since the last check
+func (c *Client) GetConversationHistorySince(ctx context.Context, channelID, afterTimestamp string, limit int) ([]slack.Message, error) {
+	params := &slack.GetConversationHistoryParameters{
+		ChannelID: channelID,
+		Limit:     limit,
+		Oldest:    afterTimestamp, // Only get messages after this timestamp
+	}
+
+	history, err := c.api.GetConversationHistoryContext(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get conversation history since %s: %w", afterTimestamp, err)
+	}
+
+	return history.Messages, nil
+}
+
+// ChannelUnreadInfo contains unread count information for a channel
+type ChannelUnreadInfo struct {
+	ChannelID   string
+	UnreadCount int
+	HasUnread   bool
+}
+
+// GetMultipleChannelUnreads retrieves unread counts for multiple channels efficiently
+// This is optimized for polling the sidebar to update unread indicators
+func (c *Client) GetMultipleChannelUnreads(ctx context.Context, channelIDs []string) ([]ChannelUnreadInfo, error) {
+	unreads := make([]ChannelUnreadInfo, 0, len(channelIDs))
+
+	// Fetch conversation info for each channel
+	// Note: Slack API doesn't have a batch endpoint for this, so we need individual calls
+	// We limit concurrent requests to avoid rate limiting
+	for _, channelID := range channelIDs {
+		info, err := c.api.GetConversationInfoContext(ctx, &slack.GetConversationInfoInput{
+			ChannelID:         channelID,
+			IncludeNumMembers: false,
+		})
+		if err != nil {
+			// Skip channels we can't access
+			continue
+		}
+
+		unreads = append(unreads, ChannelUnreadInfo{
+			ChannelID:   channelID,
+			UnreadCount: info.UnreadCount,
+			HasUnread:   info.UnreadCount > 0,
+		})
+	}
+
+	return unreads, nil
 }

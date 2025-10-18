@@ -39,6 +39,19 @@ type (
 		channelID string
 		threadTS  string // Optional: for thread replies
 	}
+	// Polling-related messages
+	newMessagesPolledMsg struct {
+		channelID string
+		messages  []models.Message
+	}
+	channelUnreadUpdatedMsg struct {
+		channelID   string
+		unreadCount int
+		hasUnread   bool
+	}
+	activitiesPolledMsg struct {
+		activities []models.Activity
+	}
 )
 
 // loadConfig loads and validates the configuration
@@ -300,5 +313,210 @@ func loadActivities(client *slackClient.Client, userID string, channels []models
 
 		// TODO: Add thread replies (requires tracking user's thread participation)
 		return activitiesLoadedMsg{activities: activities}
+	}
+}
+
+// pollCurrentChannelMessages polls for new messages in the current channel
+func pollCurrentChannelMessages(client *slackClient.Client, channelID, lastTimestamp string) tea.Cmd {
+	return func() tea.Msg {
+		if channelID == "" || lastTimestamp == "" {
+			return nil // No channel selected or no last timestamp
+		}
+
+		ctx := context.Background()
+		slackMessages, err := client.GetConversationHistorySince(ctx, channelID, lastTimestamp, 100)
+		if err != nil {
+			// Don't return error for polling failures, just skip this cycle
+			return nil
+		}
+
+		// Convert Slack messages to our model (reverse order - oldest first)
+		messages := make([]models.Message, 0, len(slackMessages))
+		for i := len(slackMessages) - 1; i >= 0; i-- {
+			msg := models.FromSlackMessage(slackMessages[i], channelID)
+
+			// Fetch user info for the message
+			if msg.UserID != "" {
+				user, err := client.GetUserInfo(ctx, msg.UserID)
+				if err == nil {
+					if user.RealName != "" {
+						msg.UserName = user.RealName
+					} else if user.Profile.DisplayName != "" {
+						msg.UserName = user.Profile.DisplayName
+					} else {
+						msg.UserName = user.Name
+					}
+				}
+			}
+
+			messages = append(messages, msg)
+		}
+
+		if len(messages) == 0 {
+			return nil // No new messages
+		}
+
+		return newMessagesPolledMsg{
+			channelID: channelID,
+			messages:  messages,
+		}
+	}
+}
+
+// pollSidebarUnreads polls for unread counts across all channels
+func pollSidebarUnreads(client *slackClient.Client, channelIDs []string) tea.Cmd {
+	return func() tea.Msg {
+		if len(channelIDs) == 0 {
+			return nil
+		}
+
+		ctx := context.Background()
+		unreads, err := client.GetMultipleChannelUnreads(ctx, channelIDs)
+		if err != nil {
+			// Don't return error for polling failures
+			return nil
+		}
+
+		// Return the first unread update (we'll batch these later if needed)
+		// For now, we'll return all updates and handle them in the TUI
+		var cmds []tea.Cmd
+		for _, unread := range unreads {
+			cmds = append(cmds, func() tea.Msg {
+				return channelUnreadUpdatedMsg{
+					channelID:   unread.ChannelID,
+					unreadCount: unread.UnreadCount,
+					hasUnread:   unread.HasUnread,
+				}
+			})
+		}
+
+		return tea.Batch(cmds...)()
+	}
+}
+
+// pollActivitiesUpdates polls for new activities (mentions, reactions, DMs)
+// This is a separate implementation from loadActivities to handle errors gracefully during polling
+func pollActivitiesUpdates(client *slackClient.Client, userID string, channels []models.Channel) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		activities := []models.Activity{}
+
+		// Create channel lookup map for quick access
+		channelMap := make(map[string]models.Channel)
+		for _, ch := range channels {
+			channelMap[ch.ID] = ch
+		}
+
+		// 1. Get mentions (skip on error, don't break polling)
+		mentionQuery := fmt.Sprintf("@%s", userID)
+		mentionMessages, err := client.SearchMessages(ctx, mentionQuery, 50)
+		if err == nil {
+			for _, msg := range mentionMessages {
+				ch, exists := channelMap[msg.Channel.ID]
+				timestamp := models.ParseSlackTimestampToTime(msg.Timestamp)
+
+				activity := models.Activity{
+					Type:        models.ActivityTypeMention,
+					ChannelID:   msg.Channel.ID,
+					ChannelName: msg.Channel.Name,
+					UserID:      msg.User,
+					UserName:    msg.Username,
+					MessageID:   msg.Timestamp,
+					MessageText: msg.Text,
+					Timestamp:   timestamp,
+					ThreadTS:    msg.Timestamp,
+				}
+
+				if exists {
+					activity.ChannelType = ch.Type
+				}
+
+				activities = append(activities, activity)
+			}
+		}
+
+		// 2. Get reactions (skip on error, don't break polling)
+		reactionItems, err := client.GetUserReactions(ctx, 50)
+		if err == nil {
+			for _, item := range reactionItems {
+				if item.Type == "message" && item.Message != nil {
+					ch, exists := channelMap[item.Channel]
+					timestamp := models.ParseSlackTimestampToTime(item.Message.Timestamp)
+
+					for _, reaction := range item.Message.Reactions {
+						activity := models.Activity{
+							Type:          models.ActivityTypeReaction,
+							ChannelID:     item.Channel,
+							ChannelName:   item.Channel,
+							UserID:        item.Message.User,
+							UserName:      item.Message.Username,
+							MessageID:     item.Message.Timestamp,
+							MessageText:   item.Message.Text,
+							Timestamp:     timestamp,
+							ReactionName:  reaction.Name,
+							ReactionCount: reaction.Count,
+						}
+
+						if exists {
+							activity.ChannelName = ch.Name
+							activity.ChannelType = ch.Type
+						}
+
+						activities = append(activities, activity)
+					}
+				}
+			}
+		}
+
+		// 3. Get unread DMs (skip on error, don't break polling)
+		unreadChannels, err := client.GetUnreadConversations(ctx)
+		if err == nil {
+			for _, slackCh := range unreadChannels {
+				// Only include DMs, not channels
+				if !slackCh.IsIM && !slackCh.IsMpIM {
+					continue
+				}
+
+				ch := models.FromSlackChannel(slackCh)
+				if ch.Type == models.ChannelTypeDM && ch.UserID != "" {
+					user, err := client.GetUserInfo(ctx, ch.UserID)
+					if err == nil {
+						if user.RealName != "" {
+							ch.UserName = user.RealName
+						} else if user.Profile.DisplayName != "" {
+							ch.UserName = user.Profile.DisplayName
+						} else {
+							ch.UserName = user.Name
+						}
+					}
+				}
+
+				// Get the last message as a preview
+				messages, err := client.GetConversationHistory(ctx, ch.ID, 1)
+				if err == nil && len(messages) > 0 {
+					lastMsg := messages[0]
+					timestamp := models.ParseSlackTimestampToTime(lastMsg.Timestamp)
+
+					activity := models.Activity{
+						Type:        models.ActivityTypeUnreadDM,
+						ChannelID:   ch.ID,
+						ChannelName: ch.UserName,
+						ChannelType: ch.Type,
+						UserID:      lastMsg.User,
+						UserName:    ch.UserName,
+						MessageID:   lastMsg.Timestamp,
+						MessageText: lastMsg.Text,
+						Timestamp:   timestamp,
+					}
+
+					activities = append(activities, activity)
+				}
+			}
+		}
+
+		// Always return activities, even if empty (don't break polling on errors)
+		return activitiesPolledMsg{
+			activities: activities,
+		}
 	}
 }

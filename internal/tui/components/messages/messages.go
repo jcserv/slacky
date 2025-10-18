@@ -127,12 +127,17 @@ func (m *Model) SetMessages(messages []models.Message) {
 }
 
 // AddMessage adds a new message to the viewport
+// Preserves the current scroll position (doesn't auto-scroll)
 func (m *Model) AddMessage(msg models.Message) {
 	m.messages = append(m.messages, msg)
+
+	// Store current scroll position before re-rendering
+	currentYOffset := m.viewport.YOffset
+
 	m.renderMessages()
 
-	// Auto-scroll to bottom for new messages
-	m.viewport.GotoBottom()
+	// Restore scroll position (preserve where user was viewing)
+	m.viewport.SetYOffset(currentYOffset)
 }
 
 // renderMessages renders all messages to the viewport content

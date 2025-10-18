@@ -402,6 +402,23 @@ func (m *ChatModel) SetKeyMap(keyMap *keys.ScopedKeyMap) {
 	m.keyMap = keyMap
 }
 
+// UpdateChannelUnread updates the unread status of a channel in the sidebar
+func (m *ChatModel) UpdateChannelUnread(channelID string, unreadCount int, hasUnread bool) {
+	// Get current channels from sidebar
+	channels := m.sidebar.GetChannels()
+
+	// Update the matching channel
+	for i := range channels {
+		if channels[i].ID == channelID {
+			channels[i].UpdateUnreadStatus(unreadCount)
+			break
+		}
+	}
+
+	// Update sidebar with modified channels
+	m.sidebar.SetChannels(channels)
+}
+
 // localize is a helper function to localize a message by ID with an optional fallback
 func (m ChatModel) localize(messageID string, fallback string) string {
 	cfg := &i18n.LocalizeConfig{

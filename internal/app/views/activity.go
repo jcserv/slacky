@@ -185,6 +185,30 @@ func (m *ActivityModel) SetActivities(activities []models.Activity) {
 	m.refreshList()
 }
 
+// AppendActivities appends new activities to the existing list
+// This is used for live updates from polling
+func (m *ActivityModel) AppendActivities(newActivities []models.Activity) {
+	if len(newActivities) == 0 {
+		return
+	}
+
+	// Create a map of existing activities by MessageID to avoid duplicates
+	existingMap := make(map[string]bool)
+	for _, activity := range m.activities {
+		existingMap[activity.MessageID] = true
+	}
+
+	// Only append activities that don't already exist
+	for _, newActivity := range newActivities {
+		if !existingMap[newActivity.MessageID] {
+			m.activities = append(m.activities, newActivity)
+		}
+	}
+
+	// Refresh the list (will re-filter and re-sort)
+	m.refreshList()
+}
+
 // refreshList updates the list based on current filter
 func (m *ActivityModel) refreshList() {
 	// Filter and sort activities
