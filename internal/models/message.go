@@ -111,8 +111,41 @@ func (m Message) FormatTime() string {
 
 // GetDisplayText returns the formatted text for display
 func (m Message) GetDisplayText() string {
-	// TODO: Handle Slack markdown formatting, user mentions, etc.
-	return util.ConvertEmojiInText(m.Text)
+	var parts []string
+
+	// Add message text if present
+	if m.Text != "" {
+		parts = append(parts, util.ConvertEmojiInText(m.Text))
+	}
+
+	// Add file attachments (each file is already formatted with potential newlines)
+	if len(m.Files) > 0 {
+		for _, file := range m.Files {
+			parts = append(parts, formatFileInfo(file))
+		}
+	}
+
+	// Add attachment information (for things like link previews, app messages)
+	// Only show if there's no text and no files
+	if len(parts) == 0 && len(m.Attachments) > 0 {
+		for _, att := range m.Attachments {
+			if att.Title != "" {
+				attachmentText := "📎 " + att.Title
+				if att.TitleLink != "" {
+					attachmentText += "\n   🔗 " + att.TitleLink
+				}
+				parts = append(parts, attachmentText)
+			} else if att.Fallback != "" {
+				parts = append(parts, att.Fallback)
+			}
+		}
+	}
+
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return strings.Join(parts, "\n")
 }
 
 // IsThreadReply returns true if this message is a reply in a thread
@@ -142,4 +175,98 @@ func (m Message) IsNewerThan(timestamp string) bool {
 // GetTimestamp returns the message timestamp as a string (same as ID)
 func (m Message) GetTimestamp() string {
 	return m.ID
+}
+
+// getFileIcon returns an emoji icon based on the file type
+func getFileIcon(filetype string) string {
+	switch strings.ToLower(filetype) {
+	// Images
+	case "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico":
+		return "📷"
+	// Videos
+	case "mp4", "mov", "avi", "mkv", "webm", "flv", "wmv":
+		return "📹"
+	// Audio
+	case "mp3", "wav", "flac", "aac", "ogg", "m4a", "wma":
+		return "🎵"
+	// Documents
+	case "pdf", "doc", "docx", "txt", "rtf", "odt":
+		return "📄"
+	// Spreadsheets
+	case "xlsx", "xls", "csv", "ods":
+		return "📊"
+	// Presentations
+	case "ppt", "pptx", "key", "odp":
+		return "📊"
+	// Archives
+	case "zip", "tar", "gz", "rar", "7z", "bz2":
+		return "🗜️"
+	// Code
+	case "go", "py", "js", "ts", "java", "c", "cpp", "h", "rs", "rb", "php", "html", "css", "json", "xml", "yaml", "yml":
+		return "💻"
+	default:
+		return "📎"
+	}
+}
+
+// formatFileSize formats a file size in bytes to a human-readable string
+func formatFileSize(bytes int) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+	)
+
+	switch {
+	case bytes >= GB:
+		return fmt.Sprintf("%.1f GB", float64(bytes)/float64(GB))
+	case bytes >= MB:
+		return fmt.Sprintf("%.1f MB", float64(bytes)/float64(MB))
+	case bytes >= KB:
+		return fmt.Sprintf("%.1f KB", float64(bytes)/float64(KB))
+	default:
+		return fmt.Sprintf("%d B", bytes)
+	}
+}
+
+// makeClickableURL creates a terminal hyperlink using OSC 8 escape sequences
+// Format: \e]8;;URL\e\\TEXT\e]8;;\e\\
+func makeClickableURL(url, text string) string {
+	if url == "" {
+		return text
+	}
+	return fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\", url, text)
+}
+
+// formatFileInfo formats a file attachment for display
+func formatFileInfo(file slack.File) string {
+	icon := getFileIcon(file.Filetype)
+	name := file.Name
+	if name == "" {
+		name = file.Title
+	}
+	if name == "" {
+		name = "file"
+	}
+
+	size := formatFileSize(file.Size)
+
+	// Build the first line with icon, name, and size
+	var firstLine string
+	if file.OriginalW > 0 && file.OriginalH > 0 {
+		firstLine = fmt.Sprintf("%s %s (%s, %dx%d)", icon, name, size, file.OriginalW, file.OriginalH)
+	} else {
+		firstLine = fmt.Sprintf("%s %s (%s)", icon, name, size)
+	}
+
+	// Add URL on a new line with indentation
+	url := file.URLPrivate
+	if url == "" {
+		url = file.Permalink
+	}
+	if url != "" {
+		return fmt.Sprintf("%s\n   🔗 %s", firstLine, url)
+	}
+
+	return firstLine
 }

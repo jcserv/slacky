@@ -481,3 +481,22 @@ other = "Use ← → to navigate reactions, space/enter to toggle"
 
 [reactions.help_exit]
 other = "Press esc to exit reaction mode"
+
+# File attachments
+[file.view_link]
+other = "View"
+
+[file.download_link]
+other = "Download"
+
+[file.size_bytes]
+other = "{{.Size}} B"
+
+[file.size_kb]
+other = "{{.Size}} KB"
+
+[file.size_mb]
+other = "{{.Size}} MB"
+
+[file.size_gb]
+other = "{{.Size}} GB"
