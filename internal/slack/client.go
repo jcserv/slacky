@@ -287,3 +287,32 @@ func (c *Client) GetMultipleChannelUnreads(ctx context.Context, channelIDs []str
 
 	return unreads, nil
 }
+
+// GetThreadReplies retrieves all messages in a thread
+func (c *Client) GetThreadReplies(ctx context.Context, channelID, threadTS string) ([]slack.Message, error) {
+	params := &slack.GetConversationRepliesParameters{
+		ChannelID: channelID,
+		Timestamp: threadTS,
+	}
+
+	messages, _, _, err := c.api.GetConversationRepliesContext(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get thread replies for %s: %w", threadTS, err)
+	}
+
+	return messages, nil
+}
+
+// SendThreadMessage sends a message as a reply in a thread
+func (c *Client) SendThreadMessage(ctx context.Context, channelID, threadTS, text string) error {
+	_, _, err := c.api.PostMessageContext(
+		ctx,
+		channelID,
+		slack.MsgOptionText(text, false),
+		slack.MsgOptionTS(threadTS),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to send thread message: %w", err)
+	}
+	return nil
+}

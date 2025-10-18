@@ -332,6 +332,25 @@ other = "Unknown"
 [chat.system_channel]
 other = "system"
 
+# Thread View
+[thread.title]
+other = "Thread in {{.ChannelName}}"
+
+[thread.no_thread]
+other = "No thread selected"
+
+[thread.replies]
+other = "{{.Count}} replies"
+
+[thread.no_replies]
+other = "No replies yet"
+
+[thread.reply_indicator]
+other = "💬 {{.Count}} replies"
+
+[thread.parent_message]
+other = "Thread started by {{.UserName}}"
+
 # OAuth Wizard
 [oauth.title]
 other = "Thanks for trying out Slacky!"

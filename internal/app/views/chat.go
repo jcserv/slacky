@@ -11,6 +11,7 @@ import (
 	"github.com/jcserv/slacky/internal/tui/components/input"
 	"github.com/jcserv/slacky/internal/tui/components/messages"
 	"github.com/jcserv/slacky/internal/tui/components/sidebar"
+	"github.com/jcserv/slacky/internal/tui/components/thread"
 	"github.com/jcserv/slacky/internal/tui/keys"
 	"github.com/jcserv/slacky/internal/tui/styles"
 )
@@ -21,12 +22,20 @@ type FocusedComponent int
 const (
 	FocusSidebar FocusedComponent = iota
 	FocusMessages
+	FocusThread
 	FocusInput
 )
 
 // SendChatMessageMsg is sent when the user wants to send a message
 type SendChatMessageMsg struct {
 	ChannelID string
+	Text      string
+}
+
+// SendThreadMessageMsg is sent when the user wants to send a thread reply
+type SendThreadMessageMsg struct {
+	ChannelID string
+	ThreadTS  string
 	Text      string
 }
 
@@ -40,10 +49,18 @@ type LoadChannelMessagesMsg struct {
 	ChannelID string
 }
 
+// LoadThreadRepliesMsg is sent to request loading thread replies
+type LoadThreadRepliesMsg struct {
+	ChannelID     string
+	ThreadTS      string
+	ParentMessage models.Message
+}
+
 // ChatModel represents the chat view
 type ChatModel struct {
 	sidebar  sidebar.Model
 	messages messages.Model
+	thread   thread.Model
 	input    input.Model
 
 	width     int
@@ -54,6 +71,7 @@ type ChatModel struct {
 	// State
 	selectedChannel *models.Channel
 	focused         FocusedComponent
+	threadActive    bool // Whether thread view is active
 }
 
 // NewChatModel creates a new chat view model
@@ -62,13 +80,15 @@ func NewChatModel() ChatModel {
 	localizer := slackyI18n.NewLocalizer(locale)
 
 	return ChatModel{
-		sidebar:   sidebar.NewModel(),
-		messages:  messages.NewModel(),
-		input:     input.NewModel(),
-		width:     80,
-		height:    24,
-		localizer: localizer,
-		focused:   FocusSidebar, // Start with sidebar focused
+		sidebar:      sidebar.NewModel(),
+		messages:     messages.NewModel(),
+		thread:       thread.NewModel(),
+		input:        input.NewModel(),
+		width:        80,
+		height:       24,
+		localizer:    localizer,
+		focused:      FocusSidebar, // Start with sidebar focused
+		threadActive: false,
 	}
 }
 
@@ -77,6 +97,7 @@ func (m ChatModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.sidebar.Init(),
 		m.messages.Init(),
+		m.thread.Init(),
 		m.input.Init(),
 	)
 }
@@ -132,8 +153,11 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 		// Handle focus switching with hardcoded keys (fallback)
 		switch msg.String() {
 		case "esc":
-			// Escape key: return to sidebar (navigation mode)
-			if m.focused != FocusSidebar {
+			// Escape key: exit thread if active, otherwise return to sidebar
+			if m.threadActive {
+				m.exitThread()
+				return m, nil
+			} else if m.focused != FocusSidebar {
 				m.setFocus(FocusSidebar)
 				return m, nil
 			}
@@ -164,8 +188,18 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 
 	case input.SendMessageMsg:
 		// Handle message sending - bubble up to parent with channel info
-		if m.selectedChannel != nil {
-			m.input.Reset()
+		m.input.Reset()
+		if m.threadActive {
+			// Send as thread reply
+			return m, func() tea.Msg {
+				return SendThreadMessageMsg{
+					ChannelID: m.thread.GetChannelID(),
+					ThreadTS:  m.thread.GetThreadTS(),
+					Text:      msg.Text,
+				}
+			}
+		} else if m.selectedChannel != nil {
+			// Send as regular message
 			return m, func() tea.Msg {
 				return SendChatMessageMsg{
 					ChannelID: m.selectedChannel.ID,
@@ -180,6 +214,17 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 		return m, func() tea.Msg {
 			return LoadChannelMessagesMsg(msg)
 		}
+
+	case messages.ThreadOpenRequestMsg:
+		// User wants to open a thread
+		m.enterThread()
+		return m, func() tea.Msg {
+			return LoadThreadRepliesMsg{
+				ChannelID:     msg.ChannelID,
+				ThreadTS:      msg.ThreadTS,
+				ParentMessage: msg.ParentMessage,
+			}
+		}
 	}
 
 	// Update components based on focus
@@ -190,6 +235,9 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	m.messages, cmd = m.messages.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.thread, cmd = m.thread.Update(msg)
 	cmds = append(cmds, cmd)
 
 	m.input, cmd = m.input.Update(msg)
@@ -226,6 +274,7 @@ func (m *ChatModel) SetSize(width, height int) {
 	// Sidebar height accounts for borders (inner height = height - 2, total = height)
 	m.sidebar.SetSize(sidebarWidth, height-2)
 	m.messages.SetSize(contentWidth, messagesHeight)
+	m.thread.SetSize(contentWidth, messagesHeight)
 	m.input.SetSize(contentWidth, inputHeight)
 }
 
@@ -248,28 +297,35 @@ func (m ChatModel) View() string {
 	// Messages box total height: remaining height after input box
 	messagesBoxTotalHeight := m.height - inputBoxTotalHeight
 
-	// Render messages view or empty state
-	messagesView := m.messages.View()
-	if m.selectedChannel == nil {
-		// Show empty state when no channel is selected
-		// Height should match messages content: messagesBoxTotalHeight - 2 (for borders)
-		emptyStateHeight := messagesBoxTotalHeight - 2
-		emptyState := lipgloss.NewStyle().
-			Width(contentWidth).
-			Height(emptyStateHeight).
-			Align(lipgloss.Center, lipgloss.Center).
-			Render(styles.Dim.Render(m.localize("chat.no_channel_selected", "Select a channel to start chatting")))
-		messagesView = emptyState
+	// Render messages or thread view
+	var messagesView string
+	if m.threadActive {
+		// Show thread view when thread is active
+		messagesView = m.thread.View()
+	} else {
+		// Show regular messages view
+		messagesView = m.messages.View()
+		if m.selectedChannel == nil {
+			// Show empty state when no channel is selected
+			// Height should match messages content: messagesBoxTotalHeight - 2 (for borders)
+			emptyStateHeight := messagesBoxTotalHeight - 2
+			emptyState := lipgloss.NewStyle().
+				Width(contentWidth).
+				Height(emptyStateHeight).
+				Align(lipgloss.Center, lipgloss.Center).
+				Render(styles.Dim.Render(m.localize("chat.no_channel_selected", "Select a channel to start chatting")))
+			messagesView = emptyState
+		}
 	}
 
-	// Wrap messages in a bordered box with focus-aware styling
+	// Wrap messages/thread in a bordered box with focus-aware styling
 	// Height() sets INNER content size, borders are added on top
 	// Inner height: messagesBoxTotalHeight - 2 = (height - 8) - 2 = height - 10
 	messagesBoxStyle := styles.Box.
 		Width(contentWidth).
 		Height(messagesBoxTotalHeight - 2) // Inner content height (borders added by lipgloss)
 
-	if m.focused == FocusMessages {
+	if m.focused == FocusMessages || m.focused == FocusThread {
 		messagesBoxStyle = messagesBoxStyle.BorderForeground(styles.ColourSuccess)
 	}
 
@@ -358,7 +414,23 @@ func (m *ChatModel) setFocus(component FocusedComponent) {
 	// Update component focus states
 	m.sidebar.SetFocused(component == FocusSidebar)
 	m.messages.SetFocused(component == FocusMessages)
+	m.thread.SetFocused(component == FocusThread)
 	m.input.SetFocused(component == FocusInput)
+}
+
+// enterThread enters thread view mode
+func (m *ChatModel) enterThread() {
+	m.threadActive = true
+	m.messages.EnableSelection()
+	m.setFocus(FocusThread)
+}
+
+// exitThread exits thread view mode and returns to channel view
+func (m *ChatModel) exitThread() {
+	m.threadActive = false
+	m.messages.DisableSelection()
+	m.thread.Clear()
+	m.setFocus(FocusMessages)
 }
 
 // SetChannels sets the list of channels in the sidebar
@@ -374,6 +446,16 @@ func (m *ChatModel) SetMessages(msgs []models.Message) {
 // AddMessage adds a new message to the viewport
 func (m *ChatModel) AddMessage(msg models.Message) {
 	m.messages.AddMessage(msg)
+}
+
+// SetThreadReplies sets the thread replies in the thread view
+func (m *ChatModel) SetThreadReplies(channelID, channelName, threadTS string, parentMessage *models.Message, messages []models.Message) {
+	m.thread.SetThread(channelID, channelName, threadTS, parentMessage, messages)
+}
+
+// AddThreadReply adds a new reply to the thread
+func (m *ChatModel) AddThreadReply(msg models.Message) {
+	m.thread.AddMessage(msg)
 }
 
 // GetSelectedChannel returns the currently selected channel

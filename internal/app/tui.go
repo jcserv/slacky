@@ -247,6 +247,14 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentChannelID = msg.channelID
 		return m, nil
 
+	case threadRepliesLoadedMsg:
+		// Set thread replies in the chat view
+		selectedCh := m.chatView.GetSelectedChannel()
+		if selectedCh != nil {
+			m.chatView.SetThreadReplies(msg.channelID, selectedCh.GetDisplayName(), msg.threadTS, &msg.parentMessage, msg.messages)
+		}
+		return m, nil
+
 	case messageSentMsg:
 		// Reload messages for the channel after sending
 		selectedCh := m.chatView.GetSelectedChannel()
@@ -255,9 +263,18 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case threadReplySentMsg:
+		// Reload thread replies after sending
+		// We need to reload to get the new reply with correct metadata
+		return m, loadThreadReplies(m.app.SlackClient, msg.channelID, msg.threadTS, models.Message{})
+
 	case views.SendChatMessageMsg:
 		// Handle message send request from chat view
 		return m, sendMessage(m.app.SlackClient, msg.ChannelID, msg.Text)
+
+	case views.SendThreadMessageMsg:
+		// Handle thread reply send request from chat view
+		return m, sendThreadReply(m.app.SlackClient, msg.ChannelID, msg.ThreadTS, msg.Text)
 
 	case views.LoadChannelMessagesMsg:
 		// Update status bar with selected channel name
@@ -267,6 +284,10 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// Load messages for the selected channel
 		return m, loadMessages(m.app.SlackClient, msg.ChannelID, 100)
+
+	case views.LoadThreadRepliesMsg:
+		// Load thread replies
+		return m, loadThreadReplies(m.app.SlackClient, msg.ChannelID, msg.ThreadTS, msg.ParentMessage)
 
 	case views.ActivitySelectedMsg:
 		// Convert to internal activitySelectedMsg
