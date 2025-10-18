@@ -145,10 +145,10 @@ func loadChannels(client *slackClient.Client) tea.Cmd {
 }
 
 // loadMessages fetches message history for a channel
-func loadMessages(client *slackClient.Client, channelID string, limit int) tea.Cmd {
+func loadMessages(client *slackClient.Client, channelID string) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
-		slackMessages, err := client.GetConversationHistory(ctx, channelID, limit)
+		slackMessages, err := client.GetConversationHistory(ctx, channelID, constants.MaxMessagesPerRequest)
 		if err != nil {
 			return errMsg(fmt.Errorf("failed to load messages for channel %s: %w", channelID, err))
 		}

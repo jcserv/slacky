@@ -265,7 +265,7 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateViewFocus()
 		m.chatView.SelectChannel(msg.channelID)
 		// Load messages for the selected channel
-		return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
+		return m, loadMessages(m.app.SlackClient, msg.channelID)
 
 	case messagesLoadedMsg:
 		// Set messages in the chat view
@@ -303,7 +303,7 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reload messages for the channel after sending
 		selectedCh := m.chatView.GetSelectedChannel()
 		if selectedCh != nil && selectedCh.ID == msg.channelID {
-			return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
+			return m, loadMessages(m.app.SlackClient, msg.channelID)
 		}
 		return m, nil
 
@@ -316,7 +316,7 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reaction was successfully added - reload messages to show the update
 		selectedCh := m.chatView.GetSelectedChannel()
 		if selectedCh != nil && selectedCh.ID == msg.channelID {
-			return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
+			return m, loadMessages(m.app.SlackClient, msg.channelID)
 		}
 		return m, nil
 
@@ -324,7 +324,7 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reaction was successfully removed - reload messages to show the update
 		selectedCh := m.chatView.GetSelectedChannel()
 		if selectedCh != nil && selectedCh.ID == msg.channelID {
-			return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
+			return m, loadMessages(m.app.SlackClient, msg.channelID)
 		}
 		return m, nil
 
@@ -348,7 +348,7 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusBar.SetCurrentChannel(selectedCh.Name)
 		}
 		// Load messages for the selected channel
-		return m, loadMessages(m.app.SlackClient, msg.ChannelID, 100)
+		return m, loadMessages(m.app.SlackClient, msg.ChannelID)
 
 	case views.LoadThreadRepliesMsg:
 		// Load thread replies
