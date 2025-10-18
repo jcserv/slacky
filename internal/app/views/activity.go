@@ -131,13 +131,23 @@ func (m ActivityModel) Update(msg tea.Msg) (ActivityModel, tea.Cmd) {
 		}
 
 		switch msg.String() {
+		case "tab":
+			// Tab: Cycle to next filter
+			m.cycleNextFilter()
+			m.refreshList()
+			return m, nil
+		case "shift+tab":
+			// Shift+Tab: Cycle to previous filter
+			m.cyclePrevFilter()
+			m.refreshList()
+			return m, nil
 		case "left":
-			// Cycle to previous filter
+			// Left arrow: Cycle to previous filter (legacy support)
 			m.cyclePrevFilter()
 			m.refreshList()
 			return m, nil
 		case "right":
-			// Cycle to next filter
+			// Right arrow: Cycle to next filter (legacy support)
 			m.cycleNextFilter()
 			m.refreshList()
 			return m, nil

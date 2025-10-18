@@ -21,11 +21,13 @@ func DefaultGlobalKeybindings() []KeybindingDef {
 		// Tab navigation
 		{Action: actions.ActionNextTab, Keys: []string{"tab"}},
 		{Action: actions.ActionPrevTab, Keys: []string{"shift+tab"}},
+		{Action: actions.ActionEnterView, Keys: []string{" ", "space"}},
+		{Action: actions.ActionExitView, Keys: []string{"esc"}},
 
-		// View navigation
-		{Action: actions.ActionGoToChat, Keys: []string{"1"}},
-		{Action: actions.ActionGoToActivity, Keys: []string{"2"}},
-		{Action: actions.ActionGoToUser, Keys: []string{"3", "u"}},
+		// View navigation (disabled by default, can be enabled in config)
+		// {Action: actions.ActionGoToChat, Keys: []string{"1"}},
+		// {Action: actions.ActionGoToActivity, Keys: []string{"2"}},
+		// {Action: actions.ActionGoToUser, Keys: []string{"3", "u"}},
 
 		// General navigation
 		{Action: actions.ActionUp, Keys: []string{"up", "k"}},

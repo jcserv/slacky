@@ -99,23 +99,16 @@ func (m Model) renderHeader() string {
 		return styles.Subtitle.Render(m.localize("thread.no_thread", "No thread selected"))
 	}
 
-	// Show thread context: "Thread in #channel-name"
-	threadTitle := m.localize("thread.title", "Thread in {{.ChannelName}}")
-	threadTitle = strings.ReplaceAll(threadTitle, "{{.ChannelName}}", "#"+m.channelName)
+	// Show thread context: "← channel-name"
+	// Note: channelName already includes the # prefix from GetDisplayName()
+	threadTitle := fmt.Sprintf("← %s", m.channelName)
 
 	titleDisplay := styles.Title.Render(threadTitle)
-
-	// Show reply count
-	replyCountText := ""
-	if len(m.messages) > 1 {
-		replyCount := len(m.messages) - 1 // Exclude parent message
-		replyCountText = fmt.Sprintf(" • %s", m.formatReplyCount(replyCount))
-	}
 
 	return lipgloss.NewStyle().
 		Width(m.width-2).
 		Padding(0, 1).
-		Render(titleDisplay + styles.Dim.Render(replyCountText))
+		Render(titleDisplay)
 }
 
 // formatReplyCount formats the reply count text
@@ -176,7 +169,6 @@ func (m *Model) renderMessages() {
 		if i == 0 {
 			// First message is the parent - render differently
 			lines = append(lines, m.formatParentMessage(msg, contentWidth))
-			lines = append(lines, "") // Blank line separator
 		} else {
 			// Subsequent messages are replies
 			lines = append(lines, m.formatReplyMessage(msg, contentWidth))

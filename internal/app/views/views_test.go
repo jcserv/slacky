@@ -281,7 +281,7 @@ func TestUserModelViewWithoutUserInfo(t *testing.T) {
 	}
 }
 
-// Test space key behavior in ChatModel
+// Test tab cycling behavior in ChatModel
 func TestChatModelSpaceKeyWithNoChannel(t *testing.T) {
 	m := NewChatModel()
 
@@ -293,16 +293,19 @@ func TestChatModelSpaceKeyWithNoChannel(t *testing.T) {
 	}
 	m.SetKeyMap(keyMap)
 
+	// Enter the view (simulating user pressing Space at tab level)
+	m.EnterView()
+
 	// Start with focus on messages (not sidebar)
 	m.focused = FocusMessages
 
-	// Press space when no channel is selected
-	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	// Press tab to cycle focus to input
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	m = updatedModel
 
-	// Should focus sidebar
-	if m.focused != FocusSidebar {
-		t.Errorf("Expected focus to be on sidebar (FocusSidebar), got %v", m.focused)
+	// Should cycle to input
+	if m.focused != FocusInput {
+		t.Errorf("Expected focus to be on input (FocusInput), got %v", m.focused)
 	}
 }
 
@@ -317,22 +320,23 @@ func TestChatModelSpaceKeyWithChannel(t *testing.T) {
 	}
 	m.SetKeyMap(keyMap)
 
+	// Enter the view (simulating user pressing Space at tab level)
+	m.EnterView()
+
 	// Set a selected channel
 	m.selectedChannel = &models.Channel{
 		ID:   "C123",
 		Name: "general",
 	}
 
-	// Start with focus on sidebar
-	m.focused = FocusSidebar
-
-	// Press space when channel is selected
-	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	// Start with focus on sidebar (default when entering view)
+	// Press tab to cycle forward
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	m = updatedModel
 
-	// Should focus input
-	if m.focused != FocusInput {
-		t.Errorf("Expected focus to be on input (FocusInput), got %v", m.focused)
+	// Should cycle to messages
+	if m.focused != FocusMessages {
+		t.Errorf("Expected focus to be on messages (FocusMessages), got %v", m.focused)
 	}
 }
 
@@ -393,4 +397,85 @@ func TestChatModelSpaceKeyAlreadyOnInput(t *testing.T) {
 // Helper function to load keybindings for tests
 func loadTestKeyMap(localizer *i18n.Localizer) (*keys.ScopedKeyMap, error) {
 	return keys.LoadKeybindings(nil, localizer)
+}
+
+// Test thread exit behavior - simulates the full user flow
+func TestChatModelThreadExitReturnsToChannel(t *testing.T) {
+	m := NewChatModel()
+
+	// Load keybindings
+	localizer := slackyI18n.NewLocalizer("en")
+	keyMap, err := loadTestKeyMap(localizer)
+	if err != nil {
+		t.Fatalf("Failed to load keybindings: %v", err)
+	}
+	m.SetKeyMap(keyMap)
+
+	// Setup: Add channels and select one
+	channels := []models.Channel{
+		{ID: "C123", Name: "general", Type: models.ChannelTypePublic},
+		{ID: "C456", Name: "random", Type: models.ChannelTypePublic},
+	}
+	m.SetChannels(channels)
+	m.SelectChannel("C123")
+	m.EnterView()
+
+	// Add messages to the channel with a thread
+	messages := []models.Message{
+		{ID: "1234.5678", Text: "First message", UserName: "user1", ChannelID: "C123", ReplyCount: 2},
+		{ID: "1234.5679", Text: "Second message", UserName: "user2", ChannelID: "C123"},
+	}
+	m.SetMessages(messages)
+
+	// Verify initial state
+	if m.threadActive {
+		t.Error("Thread should not be active initially")
+	}
+	if m.selectedChannel == nil || m.selectedChannel.ID != "C123" {
+		t.Errorf("Expected selected channel to be C123, got %v", m.selectedChannel)
+	}
+
+	// Simulate entering a thread
+	threadParentMsg := messages[0]
+	m.SetThreadReplies("C123", "#general", "1234.5678", &threadParentMsg, []models.Message{
+		threadParentMsg,
+		{ID: "1234.5680", Text: "Reply 1", UserName: "user3", ChannelID: "C123", ThreadTS: "1234.5678"},
+	})
+	m.threadActive = true
+	m.setFocus(FocusThread)
+
+	// Verify thread is active
+	if !m.threadActive {
+		t.Error("Thread should be active after entering")
+	}
+
+	// Press escape to exit thread
+	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updatedModel
+
+	// Verify thread is no longer active
+	if m.threadActive {
+		t.Error("Thread should not be active after pressing escape")
+	}
+
+	// Verify we're back to the correct channel
+	if m.selectedChannel == nil || m.selectedChannel.ID != "C123" {
+		t.Errorf("Expected to return to channel C123, got %v", m.selectedChannel)
+	}
+
+	// Verify focus is back on messages
+	if m.focused != FocusMessages {
+		t.Errorf("Expected focus to be on messages, got %v", m.focused)
+	}
+
+	// Verify a command was returned (if we need to reload messages)
+	// In the case where the thread's channel is the same as selected channel,
+	// no command should be returned
+	if cmd != nil {
+		// If a command is returned, execute it to see what message it produces
+		msg := cmd()
+		if _, ok := msg.(ChannelSelectedMsg); !ok {
+			t.Errorf("Expected ChannelSelectedMsg or nil command, got %T: %+v", msg, msg)
+		}
+	}
 }

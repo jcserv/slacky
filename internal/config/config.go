@@ -18,6 +18,7 @@ var (
 type Config struct {
 	Workspace   Workspace    `yaml:"workspace"`
 	UI          UI           `yaml:"ui"`
+	Navigation  *Navigation  `yaml:"navigation,omitempty"`
 	Keybindings *Keybindings `yaml:"keybindings,omitempty"`
 	Polling     *Polling     `yaml:"polling,omitempty"`
 }
@@ -35,6 +36,11 @@ type UI struct {
 	Theme          string `yaml:"theme"`
 	VimMode        bool   `yaml:"vim_mode"`
 	ShowTimestamps bool   `yaml:"show_timestamps"`
+}
+
+// Navigation contains navigation preferences
+type Navigation struct {
+	NumberKeysGlobal bool `yaml:"number_keys_global"` // Enable number keys (1,2,3) for tab navigation globally
 }
 
 // Keybinding represents a single keybinding configuration

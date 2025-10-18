@@ -113,6 +113,12 @@ other = "next tab"
 [keys.prev_tab]
 other = "previous tab"
 
+[keys.enter_view]
+other = "enter view"
+
+[keys.exit_view]
+other = "exit to tab level"
+
 [keys.up]
 other = "up"
 
@@ -334,7 +340,7 @@ other = "system"
 
 # Thread View
 [thread.title]
-other = "Thread in {{.ChannelName}}"
+other = "← #{{.ChannelName}}"
 
 [thread.no_thread]
 other = "No thread selected"

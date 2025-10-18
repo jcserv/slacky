@@ -1,9 +1,11 @@
 # current work
 
 # alpha
- - threads - shows thread message count, opens thread view, reply in thread
-- quick reactions  - press cmd+r to open emoji picker, arrow key nav + search
-- copy link  - Press shift+cmd+c to copy message link
+- reactions
+  - display reactions
+  - add reaction
+  - quick reactions  - press cmd+r to open emoji picker, arrow key nav + search
+- media
 
 # beta 
 core functionality
@@ -50,7 +52,7 @@ message input
     - @ dropdown
     - attach file
 
-    text formatting
+    text iiformatting
     - bold (ctrl+b)
     - italics (ctrl+i)
     - strikethrough (ctrl+shift+x)
@@ -62,7 +64,7 @@ message input
     - code block (ctrl+option+shift+c)
 
 ui/ux:
-- keybind to copy current channel
+- keybinds + dropdown to copy current channel
   - name
   - link
   - huddle link 

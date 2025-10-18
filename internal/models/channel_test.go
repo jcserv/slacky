@@ -24,6 +24,7 @@ func TestMarkAsStarred(t *testing.T) {
 			},
 			starredIDs: []string{"C123"},
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 2)
 				assert.True(t, result[0].IsStarred, "Channel C123 should be starred")
 				assert.False(t, result[1].IsStarred, "Channel C456 should not be starred")
@@ -38,6 +39,7 @@ func TestMarkAsStarred(t *testing.T) {
 			},
 			starredIDs: []string{"C123", "C789"},
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 3)
 				assert.True(t, result[0].IsStarred, "Channel C123 should be starred")
 				assert.False(t, result[1].IsStarred, "Channel C456 should not be starred")
@@ -52,6 +54,7 @@ func TestMarkAsStarred(t *testing.T) {
 			},
 			starredIDs: []string{},
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 2)
 				assert.False(t, result[0].IsStarred, "No channels should be starred")
 				assert.False(t, result[1].IsStarred, "No channels should be starred")
@@ -65,6 +68,7 @@ func TestMarkAsStarred(t *testing.T) {
 			},
 			starredIDs: []string{"C123", "C456"},
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 2)
 				assert.True(t, result[0].IsStarred, "Channel C123 should be starred")
 				assert.True(t, result[1].IsStarred, "Channel C456 should be starred")
@@ -77,6 +81,7 @@ func TestMarkAsStarred(t *testing.T) {
 			},
 			starredIDs: []string{"C999"}, // ID not in channels
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 1)
 				assert.False(t, result[0].IsStarred, "Channel C123 should not be starred")
 			},
@@ -86,6 +91,7 @@ func TestMarkAsStarred(t *testing.T) {
 			channels:   []Channel{},
 			starredIDs: []string{"C123"},
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 0)
 			},
 		},
@@ -102,6 +108,7 @@ func TestMarkAsStarred(t *testing.T) {
 			},
 			starredIDs: []string{"C123"},
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 1)
 				assert.True(t, result[0].IsStarred)
 				assert.Equal(t, "C123", result[0].ID)
@@ -119,6 +126,7 @@ func TestMarkAsStarred(t *testing.T) {
 			},
 			starredIDs: []string{"D123", "G456"},
 			verify: func(t *testing.T, result []Channel) {
+				t.Helper()
 				assert.Len(t, result, 2)
 				assert.True(t, result[0].IsStarred, "DM should be starred")
 				assert.True(t, result[1].IsStarred, "Group should be starred")

@@ -158,9 +158,6 @@ func TestGetSelectedChannel_WorksAcrossSections(t *testing.T) {
 		{ID: "C4", Name: "watercooler", IsStarred: false},
 	}
 
-	m := NewModel()
-	m.SetChannels(channels)
-
 	tests := []struct {
 		name        string
 		selectIndex int
@@ -190,6 +187,9 @@ func TestGetSelectedChannel_WorksAcrossSections(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			m := NewModel()
+			m.SetChannels(channels)
 			m.list.Select(tt.selectIndex)
 			selected := m.GetSelectedChannel()
 
@@ -229,9 +229,6 @@ func TestSelectChannel_WorksAcrossSections(t *testing.T) {
 		{ID: "C2", Name: "random", IsStarred: false},
 	}
 
-	m := NewModel()
-	m.SetChannels(channels)
-
 	tests := []struct {
 		name       string
 		selectID   string
@@ -256,6 +253,9 @@ func TestSelectChannel_WorksAcrossSections(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			m := NewModel()
+			m.SetChannels(channels)
 			m.SelectChannel(tt.selectID)
 			selected := m.GetSelectedChannel()
 
