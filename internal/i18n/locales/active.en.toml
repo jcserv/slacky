@@ -468,3 +468,16 @@ other = "Unread DM"
 
 [activity.type_thread_reply]
 other = "Thread Reply"
+
+# Reactions
+[reactions.error_add]
+other = "Failed to add reaction"
+
+[reactions.error_remove]
+other = "Failed to remove reaction"
+
+[reactions.help_navigate]
+other = "Use ← → to navigate reactions, space/enter to toggle"
+
+[reactions.help_exit]
+other = "Press esc to exit reaction mode"

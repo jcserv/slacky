@@ -10,6 +10,7 @@ import (
 	"github.com/jcserv/slacky/internal/tui/actions"
 	"github.com/jcserv/slacky/internal/tui/components/input"
 	"github.com/jcserv/slacky/internal/tui/components/messages"
+	"github.com/jcserv/slacky/internal/tui/components/messageview"
 	"github.com/jcserv/slacky/internal/tui/components/sidebar"
 	"github.com/jcserv/slacky/internal/tui/components/thread"
 	"github.com/jcserv/slacky/internal/tui/keys"
@@ -156,8 +157,13 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 		}
 
 		// Handle thread opening from messages
+		// Skip if reaction mode is active - let messages component handle it
 		if m.focused == FocusMessages && m.keyMap.MatchesAction(msg, actions.ActionOpenThread, actions.ScopeChat) {
-			if m.messages.IsSelectionEnabled() {
+			// If reaction mode is active, don't intercept - let it pass through to messages
+			if m.messages.IsReactionMode() {
+				// Don't handle here - let messages component handle it
+				// Fall through to component updates below
+			} else if m.messages.IsSelectionEnabled() {
 				selectedMsg := m.messages.GetSelectedMessage()
 				if selectedMsg != nil && selectedMsg.HasThread() {
 					return m, func() tea.Msg {
@@ -168,8 +174,8 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 						}
 					}
 				}
+				return m, nil
 			}
-			return m, nil
 		}
 
 		// Handle other keys
@@ -240,6 +246,13 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 				ThreadTS:      msg.ThreadTS,
 				ParentMessage: msg.ParentMessage,
 			}
+		}
+
+	case messageview.ReactionToggleRequestMsg:
+		// User wants to toggle a reaction
+		// Need to return a command to the parent to handle the actual API call
+		return m, func() tea.Msg {
+			return msg
 		}
 	}
 
@@ -437,7 +450,7 @@ func (m *ChatModel) setFocus(component FocusedComponent) {
 // enterThread enters thread view mode
 func (m *ChatModel) enterThread() {
 	m.threadActive = true
-	m.messages.EnableSelection()
+	// SetFocused will handle enabling selection on the thread component
 	m.setFocus(FocusThread)
 }
 
@@ -479,6 +492,11 @@ func (m ChatModel) GetSelectedChannel() *models.Channel {
 	return m.selectedChannel
 }
 
+// GetSelectedMessage returns the currently selected message from the messages viewport
+func (m ChatModel) GetSelectedMessage() *models.Message {
+	return m.messages.GetSelectedMessage()
+}
+
 // GetChannels returns all channels from the sidebar
 func (m ChatModel) GetChannels() []models.Channel {
 	return m.sidebar.GetChannels()
@@ -498,6 +516,12 @@ func (m *ChatModel) SelectChannel(channelID string) {
 // SetKeyMap sets the keybinding map for the chat view
 func (m *ChatModel) SetKeyMap(keyMap *keys.ScopedKeyMap) {
 	m.keyMap = keyMap
+}
+
+// SetUserID sets the current user ID for reaction tracking
+func (m *ChatModel) SetUserID(userID string) {
+	m.messages.SetCurrentUserID(userID)
+	m.thread.SetCurrentUserID(userID)
 }
 
 // UpdateChannelUnread updates the unread status of a channel in the sidebar

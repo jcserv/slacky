@@ -4,35 +4,23 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	slackyI18n "github.com/jcserv/slacky/internal/i18n"
 	"github.com/jcserv/slacky/internal/models"
+	"github.com/jcserv/slacky/internal/tui/components/messageview"
 	"github.com/jcserv/slacky/internal/tui/styles"
 	"github.com/muesli/reflow/wordwrap"
 )
 
 // Model represents the message viewport component
 type Model struct {
-	viewport viewport.Model
-	messages []models.Message
-	width    int
-	height   int
-	focused  bool
-
-	// Message selection
-	cursor           int  // Index of selected message
-	selectionEnabled bool // Whether message selection is active
-
-	// Current channel info
+	view        messageview.Model
 	channelName string
 	channelID   string
-
-	// i18n
-	localizer *i18n.Localizer
+	localizer   *i18n.Localizer
 }
 
 // NewModel creates a new messages model
@@ -40,21 +28,21 @@ func NewModel() Model {
 	locale := slackyI18n.DetectLocale()
 	localizer := slackyI18n.NewLocalizer(locale)
 
-	vp := viewport.New(80, 20)
-	vp.SetContent("No messages to display")
+	config := messageview.Config{
+		HeaderFormatter:  headerFormatter,
+		MessageFormatter: messageFormatter(localizer),
+		EmptyStateText:   localize(localizer, "chat.no_messages", "No messages yet. Start the conversation!"),
+	}
 
 	return Model{
-		viewport:  vp,
-		messages:  []models.Message{},
-		width:     80,
-		height:    20,
+		view:      messageview.New(config),
 		localizer: localizer,
 	}
 }
 
 // Init initializes the messages component
 func (m Model) Init() tea.Cmd {
-	return nil
+	return m.view.Init()
 }
 
 // ThreadOpenRequestMsg is sent when user wants to open a thread
@@ -67,38 +55,7 @@ type ThreadOpenRequestMsg struct {
 // Update handles messages for the viewport
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		// Only handle keys if focused
-		if !m.focused {
-			return m, nil
-		}
-
-		// Handle navigation when selection is enabled
-		if m.selectionEnabled {
-			switch msg.String() {
-			case "up", "k":
-				if m.cursor > 0 {
-					m.cursor--
-					m.renderMessages()
-				}
-				return m, nil
-			case "down", "j":
-				if m.cursor < len(m.messages)-1 {
-					m.cursor++
-					m.renderMessages()
-				}
-				return m, nil
-			}
-		}
-
-		// Let viewport handle scrolling
-		m.viewport, cmd = m.viewport.Update(msg)
-		return m, cmd
-	}
-
-	m.viewport, cmd = m.viewport.Update(msg)
+	m.view, cmd = m.view.Update(msg)
 	return m, cmd
 }
 
@@ -108,7 +65,7 @@ func (m Model) View() string {
 	header := m.renderHeader()
 
 	// Render the viewport
-	viewportContent := m.viewport.View()
+	viewportContent := m.view.View()
 
 	// Combine header and viewport
 	content := lipgloss.JoinVertical(
@@ -128,225 +85,276 @@ func (m Model) renderHeader() string {
 
 	channelDisplay := styles.Title.Render(m.channelName)
 
+	config := m.view.GetConfig()
+	width := 80 // Default, will be overridden by SetSize
+	if config.ChannelName != "" {
+		// Get actual width from viewport if available
+		width = 80 // This will be set properly via SetSize
+	}
+
 	return lipgloss.NewStyle().
-		Width(m.width-2).
+		Width(width-2).
 		Padding(0, 1).
 		Render(channelDisplay)
 }
 
 // SetSize sets the dimensions of the messages viewport
 func (m *Model) SetSize(width, height int) {
-	m.width = width
-	m.height = height
-
 	// Account for header (2 lines: title + padding)
 	viewportHeight := height - 2
 	if viewportHeight < 1 {
 		viewportHeight = 1
 	}
 
-	m.viewport.Width = width - 2 // Account for padding
-	m.viewport.Height = viewportHeight
+	m.view.SetSize(width-2, viewportHeight)
 }
 
 // SetMessages sets the list of messages to display
 func (m *Model) SetMessages(messages []models.Message) {
-	m.messages = messages
-	m.renderMessages()
+	m.view.SetMessages(messages)
 }
 
 // AddMessage adds a new message to the viewport
-// Preserves the current scroll position (doesn't auto-scroll)
 func (m *Model) AddMessage(msg models.Message) {
-	m.messages = append(m.messages, msg)
-
-	// Store current scroll position before re-rendering
-	currentYOffset := m.viewport.YOffset
-
-	m.renderMessages()
-
-	// Restore scroll position (preserve where user was viewing)
-	m.viewport.SetYOffset(currentYOffset)
-}
-
-// renderMessages renders all messages to the viewport content
-func (m *Model) renderMessages() {
-	if len(m.messages) == 0 {
-		m.viewport.SetContent(styles.Dim.Render(m.localize("chat.no_messages", "No messages yet. Start the conversation!")))
-		return
-	}
-
-	var lines []string
-	contentWidth := m.viewport.Width
-
-	for i, msg := range m.messages {
-		lines = append(lines, m.formatMessage(msg, contentWidth, i))
-	}
-
-	content := strings.Join(lines, "\n")
-	m.viewport.SetContent(content)
-}
-
-// formatMessage formats a single message for display
-func (m *Model) formatMessage(msg models.Message, width int, index int) string {
-	// Format: [HH:MM] username: message text
-	timeStr := styles.Dim.Render(fmt.Sprintf("[%s]", msg.FormatTime()))
-	username := styles.Label.Bold(true).Render(msg.UserName)
-
-	// Handle empty username (system messages, etc.)
-	if msg.UserName == "" {
-		username = styles.Dim.Render(m.localize("chat.unknown_user", "Unknown"))
-	}
-
-	// Wrap the message text
-	messageText := msg.GetDisplayText()
-	if messageText == "" {
-		messageText = styles.Dim.Italic(true).Render(fmt.Sprintf("(%s)", m.localize("chat.no_content", "no content")))
-	}
-
-	// Calculate width for wrapping (total - timestamp - username - separators)
-	// Format: "[12:34] username: " = ~20 chars typically
-	wrapWidth := width - 20
-	if wrapWidth < 20 {
-		wrapWidth = 20
-	}
-
-	wrappedText := wordwrap.String(messageText, wrapWidth)
-
-	// For thread replies, add indent
-	indent := ""
-	if msg.IsThreadReply() {
-		indent = "  ↳ "
-	}
-
-	// Add cursor/selection indicator if selection is enabled
-	prefix := ""
-	if m.selectionEnabled && index == m.cursor {
-		prefix = styles.Success.Render("▸ ")
-	} else if m.selectionEnabled {
-		prefix = "  "
-	}
-
-	// First line with timestamp and username
-	firstLine := fmt.Sprintf("%s%s%s %s: %s", prefix, indent, timeStr, username, wrappedText)
-
-	// Show edited indicator
-	if msg.IsEdited {
-		firstLine += styles.Dim.Render(fmt.Sprintf(" (%s)", m.localize("chat.edited", "edited")))
-	}
-
-	// Show thread indicator if message has thread
-	if msg.HasThread() {
-		// Format: "💬 X replies"
-		threadIndicator := fmt.Sprintf("💬 %d replies", msg.ReplyCount)
-		if msg.ReplyCount == 1 {
-			threadIndicator = "💬 1 reply"
-		}
-		firstLine += "\n" + prefix + "  " + styles.Success.Render(threadIndicator)
-	}
-
-	// Add reactions if any
-	if len(msg.Reactions) > 0 {
-		reactionStrs := make([]string, 0, len(msg.Reactions))
-		for _, r := range msg.Reactions {
-			reactionStrs = append(reactionStrs, fmt.Sprintf(":%s: %d", r.Name, r.Count))
-		}
-		reactionLine := styles.Dim.Render(prefix + "    " + strings.Join(reactionStrs, " "))
-		firstLine += "\n" + reactionLine
-	}
-
-	return firstLine
+	m.view.AddMessage(msg)
 }
 
 // SetChannel sets the current channel information
 func (m *Model) SetChannel(channelID, channelName string) {
 	m.channelID = channelID
 	m.channelName = channelName
+
+	// Update config with new channel info
+	config := m.view.GetConfig()
+	config.ChannelID = channelID
+	config.ChannelName = channelName
+	m.view.UpdateConfig(config)
+}
+
+// SetCurrentUserID sets the current user ID for checking reactions
+func (m *Model) SetCurrentUserID(userID string) {
+	m.view.SetCurrentUserID(userID)
 }
 
 // SetFocused sets the focus state of the viewport
 func (m *Model) SetFocused(focused bool) {
-	m.focused = focused
-	// Enable selection when focused, disable when not focused
-	if focused && len(m.messages) > 0 {
-		m.EnableSelection()
-	} else if !focused {
-		m.DisableSelection()
-	}
+	m.view.SetFocused(focused)
 }
 
 // IsFocused returns whether the viewport is focused
 func (m Model) IsFocused() bool {
-	return m.focused
+	return m.view.IsFocused()
 }
 
 // ScrollUp scrolls the viewport up
 func (m *Model) ScrollUp(lines int) {
-	m.viewport.ScrollUp(lines)
+	// Note: This functionality would need to be added to messageview if needed
 }
 
 // ScrollDown scrolls the viewport down
 func (m *Model) ScrollDown(lines int) {
-	m.viewport.ScrollDown(lines)
+	// Note: This functionality would need to be added to messageview if needed
 }
 
 // PageUp scrolls up by half a page
 func (m *Model) PageUp() {
-	m.viewport.HalfPageUp()
+	// Note: This functionality would need to be added to messageview if needed
 }
 
 // PageDown scrolls down by half a page
 func (m *Model) PageDown() {
-	m.viewport.HalfPageDown()
+	// Note: This functionality would need to be added to messageview if needed
 }
 
 // GotoTop scrolls to the top
 func (m *Model) GotoTop() {
-	m.viewport.GotoTop()
+	// Note: This functionality would need to be added to messageview if needed
 }
 
 // GotoBottom scrolls to the bottom
 func (m *Model) GotoBottom() {
-	m.viewport.GotoBottom()
+	// Note: This functionality would need to be added to messageview if needed
 }
 
 // EnableSelection enables message selection mode
 func (m *Model) EnableSelection() {
-	m.selectionEnabled = true
-	m.cursor = 0
-	if m.cursor >= len(m.messages) {
-		m.cursor = len(m.messages) - 1
-	}
-	m.renderMessages()
+	m.view.EnableSelection()
 }
 
 // GetSelectedMessage returns the currently selected message, or nil if none selected
 func (m Model) GetSelectedMessage() *models.Message {
-	if !m.selectionEnabled || m.cursor < 0 || m.cursor >= len(m.messages) {
-		return nil
-	}
-	return &m.messages[m.cursor]
+	return m.view.GetSelectedMessage()
 }
 
 // IsSelectionEnabled returns whether message selection is currently enabled
 func (m Model) IsSelectionEnabled() bool {
-	return m.selectionEnabled
+	return m.view.IsSelectionEnabled()
 }
 
 // DisableSelection disables message selection mode
 func (m *Model) DisableSelection() {
-	m.selectionEnabled = false
-	m.renderMessages()
+	m.view.DisableSelection()
+}
+
+// EnableReactionMode enables reaction navigation mode for the selected message
+func (m *Model) EnableReactionMode() {
+	m.view.EnableReactionMode()
+}
+
+// DisableReactionMode disables reaction navigation mode
+func (m *Model) DisableReactionMode() {
+	m.view.DisableReactionMode()
+}
+
+// IsReactionMode returns whether reaction navigation is currently active
+func (m Model) IsReactionMode() bool {
+	return m.view.IsReactionMode()
+}
+
+// GetSelectedReaction returns the currently selected reaction, or nil if none selected
+func (m Model) GetSelectedReaction() *models.Reaction {
+	return m.view.GetSelectedReaction()
+}
+
+// NavigateReactionLeft moves the reaction cursor to the left
+func (m *Model) NavigateReactionLeft() {
+	m.view.NavigateReactionLeft()
+}
+
+// NavigateReactionRight moves the reaction cursor to the right
+func (m *Model) NavigateReactionRight() {
+	m.view.NavigateReactionRight()
 }
 
 // localize is a helper function to localize a message by ID with an optional fallback
 func (m Model) localize(messageID string, fallback string) string {
+	return localize(m.localizer, messageID, fallback)
+}
+
+// localize is a package-level helper function
+func localize(localizer *i18n.Localizer, messageID string, fallback string) string {
 	cfg := &i18n.LocalizeConfig{
 		MessageID: messageID,
 	}
-	msg, err := m.localizer.Localize(cfg)
+	msg, err := localizer.Localize(cfg)
 	if err != nil && fallback != "" {
 		return fallback
 	}
 	return msg
+}
+
+// headerFormatter formats the header for the messages view
+func headerFormatter(channelName string, isThread bool, threadTS string) string {
+	if channelName == "" {
+		return ""
+	}
+	return channelName
+}
+
+// messageFormatter returns a function that formats messages for display
+func messageFormatter(localizer *i18n.Localizer) messageview.MessageFormatter {
+	return func(msg models.Message, width int, index int, state messageview.RenderState) string {
+		// Format: [HH:MM] username: message text
+		timeStr := styles.Dim.Render(fmt.Sprintf("[%s]", msg.FormatTime()))
+		username := styles.Label.Bold(true).Render(msg.UserName)
+
+		// Handle empty username (system messages, etc.)
+		if msg.UserName == "" {
+			username = styles.Dim.Render(localize(localizer, "chat.unknown_user", "Unknown"))
+		}
+
+		// Wrap the message text
+		messageText := msg.GetDisplayText()
+		if messageText == "" {
+			messageText = styles.Dim.Italic(true).Render(fmt.Sprintf("(%s)", localize(localizer, "chat.no_content", "no content")))
+		}
+
+		// Calculate width for wrapping (total - timestamp - username - separators)
+		// Format: "[12:34] username: " = ~20 chars typically
+		wrapWidth := width - 20
+		if wrapWidth < 20 {
+			wrapWidth = 20
+		}
+
+		wrappedText := wordwrap.String(messageText, wrapWidth)
+
+		// For thread replies, add indent
+		indent := ""
+		if msg.IsThreadReply() {
+			indent = "  ↳ "
+		}
+
+		// Add cursor/selection indicator if selection is enabled
+		prefix := ""
+		if state.SelectionEnabled && index == state.Cursor {
+			prefix = styles.Success.Render("▸ ")
+		} else if state.SelectionEnabled {
+			prefix = "  "
+		}
+
+		// First line with timestamp and username
+		firstLine := fmt.Sprintf("%s%s%s %s: %s", prefix, indent, timeStr, username, wrappedText)
+
+		// Show edited indicator
+		if msg.IsEdited {
+			firstLine += styles.Dim.Render(fmt.Sprintf(" (%s)", localize(localizer, "chat.edited", "edited")))
+		}
+
+		// Add reactions if any (show before thread indicator)
+		if len(msg.Reactions) > 0 {
+			reactionBubbles := make([]string, 0, len(msg.Reactions))
+			for i, r := range msg.Reactions {
+				// Convert emoji shortcode to Unicode emoji
+				emoji := ConvertEmoji(r.Name)
+
+				// Format: [emoji count]
+				bubble := fmt.Sprintf("[%s %d]", emoji, r.Count)
+
+				// Check if current user has reacted with this emoji
+				userHasReacted := false
+				if state.CurrentUserID != "" {
+					for _, uid := range r.Users {
+						if uid == state.CurrentUserID {
+							userHasReacted = true
+							break
+						}
+					}
+				}
+
+				// Apply style based on selection and user reaction status
+				if state.ReactionMode && state.Cursor == index && state.ReactionCursor == i {
+					// Selected reaction (has background)
+					if userHasReacted {
+						// Selected + user reacted: background + success color
+						bubble = styles.ReactionBubbleSelected.Bold(true).Foreground(styles.ColourSuccess).Render(bubble)
+					} else {
+						// Selected only: background
+						bubble = styles.ReactionBubbleSelected.Render(bubble)
+					}
+				} else if userHasReacted {
+					// User reacted but not selected: success color + bold
+					bubble = styles.ReactionBubbleUserReacted.Render(bubble)
+				} else {
+					// Default: dim
+					bubble = styles.ReactionBubble.Render(bubble)
+				}
+
+				reactionBubbles = append(reactionBubbles, bubble)
+			}
+			reactionLine := prefix + "    " + strings.Join(reactionBubbles, " ")
+			firstLine += "\n" + reactionLine
+		}
+
+		// Show thread indicator if message has thread (after reactions)
+		if msg.HasThread() {
+			// Format: "💬 X replies"
+			threadIndicator := fmt.Sprintf("💬 %d replies", msg.ReplyCount)
+			if msg.ReplyCount == 1 {
+				threadIndicator = "💬 1 reply"
+			}
+			firstLine += "\n" + prefix + "  " + styles.Success.Render(threadIndicator)
+		}
+
+		return firstLine
+	}
 }

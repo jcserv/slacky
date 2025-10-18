@@ -111,49 +111,67 @@ var (
 	BoxActive = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(Primary)
+
+	// Reaction styles
+	ReactionBubble = lipgloss.NewStyle().
+			Foreground(ColourDim)
+
+	ReactionBubbleSelected = lipgloss.NewStyle().
+				Foreground(ColourForeground).
+				Background(ColourSubtle)
+
+	ReactionBubbleUserReacted = lipgloss.NewStyle().
+					Foreground(ColourSuccess).
+					Bold(true)
 )
 
 // GetTheme returns a Theme struct with all styles
 type Theme struct {
-	Title        lipgloss.Style
-	Subtitle     lipgloss.Style
-	Label        lipgloss.Style
-	Success      lipgloss.Style
-	Error        lipgloss.Style
-	Info         lipgloss.Style
-	Warning      lipgloss.Style
-	Dim          lipgloss.Style
-	Help         lipgloss.Style
-	Completed    lipgloss.Style
-	Highlight    lipgloss.Style
-	Border       lipgloss.Style
-	Box          lipgloss.Style
-	Tab          lipgloss.Style
-	ActiveTab    lipgloss.Style
-	TabSeparator lipgloss.Style
-	TabsRow      lipgloss.Style
-	StatusBar    lipgloss.Style
+	Title                     lipgloss.Style
+	Subtitle                  lipgloss.Style
+	Label                     lipgloss.Style
+	Success                   lipgloss.Style
+	Error                     lipgloss.Style
+	Info                      lipgloss.Style
+	Warning                   lipgloss.Style
+	Dim                       lipgloss.Style
+	Help                      lipgloss.Style
+	Completed                 lipgloss.Style
+	Highlight                 lipgloss.Style
+	Border                    lipgloss.Style
+	Box                       lipgloss.Style
+	Tab                       lipgloss.Style
+	ActiveTab                 lipgloss.Style
+	TabSeparator              lipgloss.Style
+	TabsRow                   lipgloss.Style
+	StatusBar                 lipgloss.Style
+	ReactionBubble            lipgloss.Style
+	ReactionBubbleSelected    lipgloss.Style
+	ReactionBubbleUserReacted lipgloss.Style
 }
 
 func DefaultTheme() Theme {
 	return Theme{
-		Title:        Title,
-		Subtitle:     Subtitle,
-		Label:        Label,
-		Success:      Success,
-		Error:        Error,
-		Info:         Info,
-		Warning:      Warning,
-		Dim:          Dim,
-		Help:         Help,
-		Completed:    Completed,
-		Highlight:    Highlight,
-		Border:       Border,
-		Box:          Box,
-		Tab:          Tab,
-		ActiveTab:    ActiveTab,
-		TabSeparator: TabSeparator,
-		TabsRow:      TabsRow,
-		StatusBar:    StatusBar,
+		Title:                     Title,
+		Subtitle:                  Subtitle,
+		Label:                     Label,
+		Success:                   Success,
+		Error:                     Error,
+		Info:                      Info,
+		Warning:                   Warning,
+		Dim:                       Dim,
+		Help:                      Help,
+		Completed:                 Completed,
+		Highlight:                 Highlight,
+		Border:                    Border,
+		Box:                       Box,
+		Tab:                       Tab,
+		ActiveTab:                 ActiveTab,
+		TabSeparator:              TabSeparator,
+		TabsRow:                   TabsRow,
+		StatusBar:                 StatusBar,
+		ReactionBubble:            ReactionBubble,
+		ReactionBubbleSelected:    ReactionBubbleSelected,
+		ReactionBubbleUserReacted: ReactionBubbleUserReacted,
 	}
 }

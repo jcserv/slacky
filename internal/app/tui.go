@@ -17,6 +17,7 @@ import (
 	"github.com/jcserv/slacky/internal/models"
 	"github.com/jcserv/slacky/internal/tui"
 	"github.com/jcserv/slacky/internal/tui/actions"
+	"github.com/jcserv/slacky/internal/tui/components/messageview"
 	"github.com/jcserv/slacky/internal/tui/components/statusbar"
 	"github.com/jcserv/slacky/internal/tui/components/tabs"
 	tuiKeys "github.com/jcserv/slacky/internal/tui/keys"
@@ -227,6 +228,7 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update components with user info
 		m.tabs.SetUserName(msg.userName)
 		m.userView.SetUserInfo(msg.userName, msg.teamName)
+		m.chatView.SetUserID(msg.userID)
 		m.statusBar.SetConnected(true)
 
 		// Set focus on the initial tab
@@ -310,6 +312,27 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// We need to reload to get the new reply with correct metadata
 		return m, loadThreadReplies(m.app.SlackClient, msg.channelID, msg.threadTS, models.Message{})
 
+	case reactionAddedMsg:
+		// Reaction was successfully added - reload messages to show the update
+		selectedCh := m.chatView.GetSelectedChannel()
+		if selectedCh != nil && selectedCh.ID == msg.channelID {
+			return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
+		}
+		return m, nil
+
+	case reactionRemovedMsg:
+		// Reaction was successfully removed - reload messages to show the update
+		selectedCh := m.chatView.GetSelectedChannel()
+		if selectedCh != nil && selectedCh.ID == msg.channelID {
+			return m, loadMessages(m.app.SlackClient, msg.channelID, 100)
+		}
+		return m, nil
+
+	case reactionErrorMsg:
+		// Handle reaction error
+		slog.Error("reaction error", "error", msg.err)
+		return m, nil
+
 	case views.SendChatMessageMsg:
 		// Handle message send request from chat view
 		return m, sendMessage(m.app.SlackClient, msg.ChannelID, msg.Text)
@@ -330,6 +353,22 @@ func (m TUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case views.LoadThreadRepliesMsg:
 		// Load thread replies
 		return m, loadThreadReplies(m.app.SlackClient, msg.ChannelID, msg.ThreadTS, msg.ParentMessage)
+
+	case messageview.ReactionToggleRequestMsg:
+		// User wants to toggle a reaction on a message
+		// Get the selected message to access its current reactions
+		selectedMsg := m.chatView.GetSelectedMessage()
+		if selectedMsg != nil {
+			return m, toggleReaction(
+				m.app.SlackClient,
+				msg.ChannelID,
+				msg.Timestamp,
+				msg.EmojiName,
+				m.userID,
+				selectedMsg.Reactions,
+			)
+		}
+		return m, nil
 
 	case views.ActivitySelectedMsg:
 		// Convert to internal activitySelectedMsg
