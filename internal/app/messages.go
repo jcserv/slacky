@@ -3,10 +3,12 @@ package app
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/jcserv/slacky/internal/config"
+	"github.com/jcserv/slacky/internal/constants"
 	"github.com/jcserv/slacky/internal/models"
 	slackClient "github.com/jcserv/slacky/internal/slack"
 )
@@ -75,11 +77,11 @@ func loadConfig(app *App) tea.Cmd {
 // checkAuth tests authentication with Slack
 func checkAuth(cfg *config.Config) tea.Cmd {
 	return func() tea.Msg {
-		var client *slackClient.Client
-		if cfg.Workspace.UserToken != "" {
-			client = slackClient.New(cfg.Workspace.UserToken)
+		if cfg.Workspace.UserToken == "" {
+			return errMsg(fmt.Errorf("authentication failed: no user token configured"))
 		}
 
+		client := slackClient.New(cfg.Workspace.UserToken)
 		ctx := context.Background()
 		authResp, err := client.TestAuth(ctx)
 		if err != nil {
@@ -108,21 +110,16 @@ func loadChannels(client *slackClient.Client) tea.Cmd {
 		for _, sc := range slackChannels {
 			ch := models.FromSlackChannel(sc)
 
-			// For DMs, fetch the user's name and check if it's a bot
 			if ch.Type == models.ChannelTypeDM && ch.UserID != "" {
-				user, err := client.GetUserInfo(ctx, ch.UserID)
-				if err == nil {
-					// Use real name if available, otherwise use display name
-					if user.RealName != "" {
-						ch.UserName = user.RealName
-					} else if user.Profile.DisplayName != "" {
-						ch.UserName = user.Profile.DisplayName
-					} else {
-						ch.UserName = user.Name
+				if name, ok := globalUserCache.get(ch.UserID); ok {
+					ch.UserName = name
+				} else {
+					user, err := client.GetUserInfo(ctx, ch.UserID)
+					if err == nil {
+						ch.UserName = extractUserName(user)
+						ch.IsBot = user.IsBot || user.IsAppUser || user.ID == "USLACKBOT"
+						globalUserCache.set(ch.UserID, ch.UserName)
 					}
-					// Check if the user is a bot or app
-					// Special case: Slackbot has user ID "USLACKBOT"
-					ch.IsBot = user.IsBot || user.IsAppUser || user.ID == "USLACKBOT"
 				}
 			}
 
@@ -142,28 +139,7 @@ func loadMessages(client *slackClient.Client, channelID string, limit int) tea.C
 			return errMsg(fmt.Errorf("failed to load messages for channel %s: %w", channelID, err))
 		}
 
-		// Convert Slack messages to our model (reverse order - oldest first)
-		messages := make([]models.Message, 0, len(slackMessages))
-		for i := len(slackMessages) - 1; i >= 0; i-- {
-			msg := models.FromSlackMessage(slackMessages[i], channelID)
-
-			// Fetch user info for the message
-			if msg.UserID != "" {
-				user, err := client.GetUserInfo(ctx, msg.UserID)
-				if err == nil {
-					// Use real name if available, otherwise use display name
-					if user.RealName != "" {
-						msg.UserName = user.RealName
-					} else if user.Profile.DisplayName != "" {
-						msg.UserName = user.Profile.DisplayName
-					} else {
-						msg.UserName = user.Name
-					}
-				}
-			}
-
-			messages = append(messages, msg)
-		}
+		messages := enrichMessagesWithUserInfo(ctx, client, slackMessages, channelID)
 
 		return messagesLoadedMsg{
 			channelID: channelID,
@@ -212,7 +188,7 @@ func loadActivities(client *slackClient.Client, userID string, channels []models
 
 		// 1. Get mentions
 		mentionQuery := fmt.Sprintf("@%s", userID)
-		mentionMessages, err := client.SearchMessages(ctx, mentionQuery, 50)
+		mentionMessages, err := client.SearchMessages(ctx, mentionQuery, constants.MaxMessagesPerRequest)
 		if err != nil {
 			return errMsg(fmt.Errorf("failed to load mentions: %w", err))
 		}
@@ -241,7 +217,7 @@ func loadActivities(client *slackClient.Client, userID string, channels []models
 		}
 
 		// 2. Get reactions
-		reactionItems, err := client.GetUserReactions(ctx, 50)
+		reactionItems, err := client.GetUserReactions(ctx, constants.MaxReactionsPerRequest)
 		if err != nil {
 			return errMsg(fmt.Errorf("failed to load reactions: %w", err))
 		}
@@ -287,16 +263,7 @@ func loadActivities(client *slackClient.Client, userID string, channels []models
 
 			ch := models.FromSlackChannel(slackCh)
 			if ch.Type == models.ChannelTypeDM && ch.UserID != "" {
-				user, err := client.GetUserInfo(ctx, ch.UserID)
-				if err == nil {
-					if user.RealName != "" {
-						ch.UserName = user.RealName
-					} else if user.Profile.DisplayName != "" {
-						ch.UserName = user.Profile.DisplayName
-					} else {
-						ch.UserName = user.Name
-					}
-				}
+				ch.UserName = getUserNameWithCache(ctx, client, ch.UserID)
 			}
 
 			// Get the last message as a preview
@@ -330,41 +297,23 @@ func loadActivities(client *slackClient.Client, userID string, channels []models
 func pollCurrentChannelMessages(client *slackClient.Client, channelID, lastTimestamp string) tea.Cmd {
 	return func() tea.Msg {
 		if channelID == "" || lastTimestamp == "" {
-			return nil // No channel selected or no last timestamp
-		}
-
-		ctx := context.Background()
-		slackMessages, err := client.GetConversationHistorySince(ctx, channelID, lastTimestamp, 100)
-		if err != nil {
-			// Don't return error for polling failures, just skip this cycle
 			return nil
 		}
 
-		// Convert Slack messages to our model (reverse order - oldest first)
-		messages := make([]models.Message, 0, len(slackMessages))
-		for i := len(slackMessages) - 1; i >= 0; i-- {
-			msg := models.FromSlackMessage(slackMessages[i], channelID)
-
-			// Fetch user info for the message
-			if msg.UserID != "" {
-				user, err := client.GetUserInfo(ctx, msg.UserID)
-				if err == nil {
-					if user.RealName != "" {
-						msg.UserName = user.RealName
-					} else if user.Profile.DisplayName != "" {
-						msg.UserName = user.Profile.DisplayName
-					} else {
-						msg.UserName = user.Name
-					}
-				}
-			}
-
-			messages = append(messages, msg)
+		ctx := context.Background()
+		slackMessages, err := client.GetConversationHistorySince(ctx, channelID, lastTimestamp, constants.MaxMessagesPerRequest)
+		if err != nil {
+			slog.Warn("failed to poll current channel messages",
+				"channel_id", channelID,
+				"error", err)
+			return nil
 		}
 
-		if len(messages) == 0 {
-			return nil // No new messages
+		if len(slackMessages) == 0 {
+			return nil
 		}
+
+		messages := enrichMessagesWithUserInfo(ctx, client, slackMessages, channelID)
 
 		return newMessagesPolledMsg{
 			channelID: channelID,
@@ -383,7 +332,9 @@ func pollSidebarUnreads(client *slackClient.Client, channelIDs []string) tea.Cmd
 		ctx := context.Background()
 		unreads, err := client.GetMultipleChannelUnreads(ctx, channelIDs)
 		if err != nil {
-			// Don't return error for polling failures
+			slog.Warn("failed to poll sidebar unreads",
+				"channel_count", len(channelIDs),
+				"error", err)
 			return nil
 		}
 
@@ -419,7 +370,7 @@ func pollActivitiesUpdates(client *slackClient.Client, userID string, channels [
 
 		// 1. Get mentions (skip on error, don't break polling)
 		mentionQuery := fmt.Sprintf("@%s", userID)
-		mentionMessages, err := client.SearchMessages(ctx, mentionQuery, 50)
+		mentionMessages, err := client.SearchMessages(ctx, mentionQuery, constants.MaxMessagesPerRequest)
 		if err == nil {
 			for _, msg := range mentionMessages {
 				ch, exists := channelMap[msg.Channel.ID]
@@ -446,7 +397,7 @@ func pollActivitiesUpdates(client *slackClient.Client, userID string, channels [
 		}
 
 		// 2. Get reactions (skip on error, don't break polling)
-		reactionItems, err := client.GetUserReactions(ctx, 50)
+		reactionItems, err := client.GetUserReactions(ctx, constants.MaxReactionsPerRequest)
 		if err == nil {
 			for _, item := range reactionItems {
 				if item.Type == "message" && item.Message != nil {
@@ -489,16 +440,7 @@ func pollActivitiesUpdates(client *slackClient.Client, userID string, channels [
 
 				ch := models.FromSlackChannel(slackCh)
 				if ch.Type == models.ChannelTypeDM && ch.UserID != "" {
-					user, err := client.GetUserInfo(ctx, ch.UserID)
-					if err == nil {
-						if user.RealName != "" {
-							ch.UserName = user.RealName
-						} else if user.Profile.DisplayName != "" {
-							ch.UserName = user.Profile.DisplayName
-						} else {
-							ch.UserName = user.Name
-						}
-					}
+					ch.UserName = getUserNameWithCache(ctx, client, ch.UserID)
 				}
 
 				// Get the last message as a preview
@@ -540,23 +482,12 @@ func loadThreadReplies(client *slackClient.Client, channelID, threadTS string, p
 			return errMsg(fmt.Errorf("failed to load thread replies for %s: %w", threadTS, err))
 		}
 
-		// Convert Slack messages to our model
 		messages := make([]models.Message, 0, len(slackMessages))
 		for _, sm := range slackMessages {
 			msg := models.FromSlackMessage(sm, channelID)
 
-			// Fetch user info for the message
 			if msg.UserID != "" {
-				user, err := client.GetUserInfo(ctx, msg.UserID)
-				if err == nil {
-					if user.RealName != "" {
-						msg.UserName = user.RealName
-					} else if user.Profile.DisplayName != "" {
-						msg.UserName = user.Profile.DisplayName
-					} else {
-						msg.UserName = user.Name
-					}
-				}
+				msg.UserName = getUserNameWithCache(ctx, client, msg.UserID)
 			}
 
 			messages = append(messages, msg)
